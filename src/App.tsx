@@ -10,6 +10,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import RoadmapPage from "./pages/RoadmapPage";
 import QuizzesPage from "./pages/QuizzesPage";
 import CommunityPage from "./pages/CommunityPage";
+import CreatePostPage from "./pages/CreatePostPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/quizzes" element={<QuizzesPage />} />
             <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community/create-post" element={<CreatePostPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

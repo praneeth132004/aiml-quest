@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import PostCard, { Post } from "@/components/community/PostCard";
 import { Input } from "@/components/ui/input";
@@ -7,94 +7,88 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, TrendingUp, Clock, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// Mock data for community posts
-const mockPosts: Post[] = [
-  {
-    id: "post-1",
-    title: "How to optimize hyperparameters in neural networks?",
-    content: "I've been working with neural networks for my image classification project, but I'm struggling with hyperparameter tuning. What approaches do you recommend for effectively optimizing learning rate, batch size, and network architecture? I've tried grid search but it's computationally expensive.",
-    author: {
-      name: "Alex Johnson",
-      avatar: "",
-      initials: "AJ",
-    },
-    createdAt: "2 hours ago",
-    tags: ["neural-networks", "optimization", "hyperparameters"],
-    upvotes: 24,
-    downvotes: 2,
-    comments: 8,
-  },
-  {
-    id: "post-2",
-    title: "Best resources to learn reinforcement learning from scratch?",
-    content: "I'm looking to dive into reinforcement learning but finding the learning curve quite steep. Can anyone recommend good beginner-friendly resources (books, courses, tutorials) that helped you get started? I have a strong background in Python and basic ML concepts.",
-    author: {
-      name: "Maya Patel",
-      avatar: "",
-      initials: "MP",
-    },
-    createdAt: "5 hours ago",
-    tags: ["reinforcement-learning", "resources", "beginner"],
-    upvotes: 31,
-    downvotes: 0,
-    comments: 12,
-  },
-  {
-    id: "post-3",
-    title: "Handling imbalanced datasets for fraud detection",
-    content: "I'm working on a fraud detection model where only about 0.5% of transactions are fraudulent. What techniques have worked well for you in handling such extreme class imbalance? I've tried SMOTE and class weights but still struggling with false positives.",
-    author: {
-      name: "Sam Wilson",
-      avatar: "",
-      initials: "SW",
-    },
-    createdAt: "12 hours ago",
-    tags: ["imbalanced-data", "fraud-detection", "classification"],
-    upvotes: 18,
-    downvotes: 1,
-    comments: 7,
-  },
-  {
-    id: "post-4",
-    title: "Transitioning from software engineering to ML engineering",
-    content: "I've been a backend software engineer for 5 years and want to transition to ML engineering. What skills should I focus on learning first? How different is the day-to-day work? Any advice from those who made a similar career switch would be much appreciated.",
-    author: {
-      name: "Jordan Lee",
-      avatar: "",
-      initials: "JL",
-    },
-    createdAt: "1 day ago",
-    tags: ["career", "ml-engineering", "transition"],
-    upvotes: 42,
-    downvotes: 3,
-    comments: 15,
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const CommunityPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("trending");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setIsLoading(true);
+      try {
+        // Determine sort order based on active tab
+        let query = supabase
+          .from('posts')
+          .select(`
+            id,
+            title,
+            content,
+            created_at,
+            tags,
+            upvotes,
+            downvotes,
+            comments_count,
+            profiles(username, full_name, avatar_url)
+          `);
+
+        if (activeTab === "trending") {
+          query = query.order('upvotes', { ascending: false });
+        } else if (activeTab === "recent") {
+          query = query.order('created_at', { ascending: false });
+        } else if (activeTab === "most-commented") {
+          query = query.order('comments_count', { ascending: false });
+        }
+          
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        if (data) {
+          const formattedPosts = data.map(post => ({
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            author: {
+              name: post.profiles?.full_name || post.profiles?.username || "Anonymous User",
+              avatar: post.profiles?.avatar_url || "",
+              initials: (post.profiles?.full_name || post.profiles?.username || "AU").split(" ").map(n => n[0]).join("").toUpperCase(),
+            },
+            createdAt: new Date(post.created_at).toLocaleDateString(),
+            tags: post.tags || [],
+            upvotes: post.upvotes || 0,
+            downvotes: post.downvotes || 0,
+            comments: post.comments_count || 0,
+          }));
+          
+          setPosts(formattedPosts);
+        }
+      } catch (error: any) {
+        console.error("Error fetching posts:", error);
+        toast({
+          variant: "destructive",
+          title: "Error loading posts",
+          description: error.message,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [activeTab]);
 
   // Filter posts based on search
-  const filteredPosts = mockPosts.filter(post => 
+  const filteredPosts = posts.filter(post => 
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  // Sort posts based on active tab
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (activeTab === "trending") {
-      return (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes);
-    } else if (activeTab === "recent") {
-      // This is simplified - in a real app, you'd use actual dates
-      return a.createdAt.localeCompare(b.createdAt);
-    } else if (activeTab === "most-commented") {
-      return b.comments - a.comments;
-    }
-    return 0;
-  });
 
   return (
     <PageLayout>
@@ -154,8 +148,12 @@ const CommunityPage = () => {
         </Tabs>
 
         <div className="space-y-6">
-          {sortedPosts.length > 0 ? (
-            sortedPosts.map((post) => (
+          {isLoading ? (
+            <div className="py-12 text-center">
+              <p className="text-gray-500">Loading posts...</p>
+            </div>
+          ) : filteredPosts.length > 0 ? (
+            filteredPosts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))
           ) : (

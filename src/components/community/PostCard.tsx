@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, ThumbsUp, ThumbsDown, Share, BookmarkPlus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 export interface Post {
   id: string;
@@ -28,39 +31,131 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
+  const { user } = useAuth();
   const [votes, setVotes] = useState({
     upvotes: post.upvotes,
     downvotes: post.downvotes,
     userVote: null as 'up' | 'down' | null,
   });
 
-  const handleVote = (type: 'up' | 'down') => {
-    setVotes(prev => {
+  const handleVote = async (type: 'up' | 'down') => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You need to be logged in to vote.",
+      });
+      return;
+    }
+
+    try {
+      let newUpvotes = votes.upvotes;
+      let newDownvotes = votes.downvotes;
+      let newUserVote = type;
+
       // If user is clicking the same vote button again, remove their vote
-      if (prev.userVote === type) {
-        return {
-          upvotes: type === 'up' ? prev.upvotes - 1 : prev.upvotes,
-          downvotes: type === 'down' ? prev.downvotes - 1 : prev.downvotes,
-          userVote: null,
-        };
+      if (votes.userVote === type) {
+        if (type === 'up') newUpvotes--;
+        else newDownvotes--;
+        newUserVote = null;
       }
       // If user is changing their vote
-      else if (prev.userVote !== null) {
-        return {
-          upvotes: type === 'up' ? prev.upvotes + 1 : prev.upvotes - 1,
-          downvotes: type === 'down' ? prev.downvotes + 1 : prev.downvotes - 1,
-          userVote: type,
-        };
+      else if (votes.userVote !== null) {
+        if (type === 'up') {
+          newUpvotes++;
+          newDownvotes--;
+        } else {
+          newUpvotes--;
+          newDownvotes++;
+        }
       }
       // If user is voting for the first time
       else {
-        return {
-          upvotes: type === 'up' ? prev.upvotes + 1 : prev.upvotes,
-          downvotes: type === 'down' ? prev.downvotes + 1 : prev.downvotes,
-          userVote: type,
-        };
+        if (type === 'up') newUpvotes++;
+        else newDownvotes++;
       }
-    });
+
+      // Optimistically update the UI
+      setVotes({
+        upvotes: newUpvotes,
+        downvotes: newDownvotes,
+        userVote: newUserVote,
+      });
+
+      // Update the database
+      const { error } = await supabase
+        .from('posts')
+        .update({
+          upvotes: newUpvotes,
+          downvotes: newDownvotes
+        })
+        .eq('id', post.id);
+
+      if (error) throw error;
+
+      // Record the user's vote
+      if (newUserVote) {
+        await supabase.from('post_votes').upsert({
+          post_id: post.id,
+          user_id: user.id,
+          vote_type: newUserVote
+        }, {
+          onConflict: 'post_id,user_id'
+        });
+      } else {
+        // Remove the vote record if they're un-voting
+        await supabase
+          .from('post_votes')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', user.id);
+      }
+    } catch (error: any) {
+      console.error("Error voting:", error);
+      // Revert the optimistic update on error
+      setVotes({
+        upvotes: post.upvotes,
+        downvotes: post.downvotes,
+        userVote: null,
+      });
+      toast({
+        variant: "destructive",
+        title: "Error recording vote",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You need to be logged in to save posts.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('saved_posts')
+        .upsert({
+          user_id: user.id,
+          post_id: post.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Post saved",
+        description: "This post has been added to your saved items."
+      });
+    } catch (error: any) {
+      console.error("Error saving post:", error);
+      toast({
+        variant: "destructive",
+        title: "Error saving post",
+        description: error.message,
+      });
+    }
   };
 
   return (
@@ -69,6 +164,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="flex justify-between">
           <div className="flex items-center space-x-2">
             <Avatar className="h-8 w-8">
+              {post.author.avatar && <AvatarImage src={post.author.avatar} alt={post.author.name} />}
               <AvatarFallback>{post.author.initials}</AvatarFallback>
             </Avatar>
             <div>
@@ -76,7 +172,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               <p className="text-xs text-gray-500">{post.createdAt}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={handleSave}>
             <BookmarkPlus className="h-4 w-4" />
           </Button>
         </div>
@@ -123,7 +219,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           <Button variant="ghost" size="sm" className="flex items-center" asChild>
             <Link to={`/community/posts/${post.id}`}>
               <MessageSquare className="h-4 w-4 mr-1" />
-              <span>{post.comments}</span>
+              <span>{votes.comments}</span>
             </Link>
           </Button>
           <Button variant="ghost" size="sm">
