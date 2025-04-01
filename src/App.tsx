@@ -12,6 +12,7 @@ import QuizzesPage from "./pages/QuizzesPage";
 import CommunityPage from "./pages/CommunityPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/quizzes" element={<QuizzesPage />} />
