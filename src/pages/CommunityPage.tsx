@@ -34,7 +34,7 @@ const CommunityPage = () => {
             upvotes,
             downvotes,
             comments_count,
-            profiles(username, full_name, avatar_url)
+            profiles!posts_user_id_fkey(username, full_name, avatar_url)
           `);
 
         if (activeTab === "trending") {
