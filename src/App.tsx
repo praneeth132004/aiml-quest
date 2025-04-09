@@ -15,6 +15,7 @@ import PostPage from "./pages/PostPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ClassDiagramPage from "./pages/ClassDiagramPage";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/community/create-post" element={<CreatePostPage />} />
             <Route path="/community/posts/:id" element={<PostPage />} />
+            <Route path="/architecture" element={<ClassDiagramPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
