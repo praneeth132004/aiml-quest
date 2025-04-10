@@ -180,6 +180,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: "You have successfully signed in.",
           });
         } else if (event === 'SIGNED_OUT') {
+          console.log('Auth state change: SIGNED_OUT event detected');
+          // Clear user data on sign out
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+
           toast({
             title: "Signed out",
             description: "You have been signed out.",
@@ -302,8 +308,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('User signed out successfully');
 
-      // Navigate to auth page
+      // Navigate to auth page and force a page reload to clear any remaining state
       navigate("/auth");
+
+      // Add a small delay before reloading to ensure navigation completes
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error: any) {
       console.error('Error signing out:', error);
       toast({
