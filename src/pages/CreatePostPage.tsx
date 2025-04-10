@@ -222,7 +222,7 @@ const CreatePostPage = () => {
   };
 
   return (
-    <PageLayout>
+    <PageLayout requireAuth={true}>
       <div className="container mx-auto px-4 py-12">
         {isProfileLoading && !profileLoadingTimeout && (
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">

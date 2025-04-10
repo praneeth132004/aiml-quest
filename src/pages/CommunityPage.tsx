@@ -225,7 +225,7 @@ const CommunityPage = () => {
     );
 
     return (
-      <PageLayout>
+      <PageLayout requireAuth={true}>
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row justify-between items-start mb-8">
             <div>
@@ -342,7 +342,7 @@ const CommunityPage = () => {
   } catch (error) {
     console.error('Error rendering CommunityPage:', error);
     return (
-      <PageLayout>
+      <PageLayout requireAuth={true}>
         <div className="container mx-auto px-4 py-12">
           <div className="bg-red-50 border border-red-200 rounded-md p-6 text-center">
             <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
