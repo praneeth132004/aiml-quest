@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export interface Post {
   upvotes: number;
   downvotes: number;
   comments: number;
+  userVote?: 'upvote' | 'downvote' | null;
 }
 
 interface PostCardProps {
@@ -32,10 +33,14 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { user } = useAuth();
-  const [votes, setVotes] = useState({
+  const [votes, setVotes] = useState<{
+    upvotes: number;
+    downvotes: number;
+    userVote: 'upvote' | 'downvote' | null;
+  }>({
     upvotes: post.upvotes,
     downvotes: post.downvotes,
-    userVote: null as 'up' | 'down' | null,
+    userVote: post.userVote || null,
   });
 
   const handleVote = async (type: 'up' | 'down') => {
@@ -50,10 +55,13 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     try {
       let newUpvotes = votes.upvotes;
       let newDownvotes = votes.downvotes;
-      let newUserVote = type;
+      // Convert 'up'/'down' to 'upvote'/'downvote' for database
+      const voteType = type === 'up' ? 'upvote' : 'downvote';
+      let newUserVote = voteType;
 
       // If user is clicking the same vote button again, remove their vote
-      if (votes.userVote === type) {
+      if ((votes.userVote === 'upvote' && type === 'up') ||
+          (votes.userVote === 'downvote' && type === 'down')) {
         if (type === 'up') newUpvotes--;
         else newDownvotes--;
         newUserVote = null;
@@ -81,33 +89,34 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         userVote: newUserVote,
       });
 
-      // Update the database
-      const { error } = await supabase
-        .from('posts')
-        .update({
-          upvotes: newUpvotes,
-          downvotes: newDownvotes
-        })
-        .eq('id', post.id);
+      console.log('Saving vote:', {
+        post_id: post.id,
+        user_id: user.id,
+        vote_type: newUserVote
+      });
 
-      if (error) throw error;
-
-      // Record the user's vote
+      // Record the user's vote in post_votes (triggers will update posts table)
       if (newUserVote) {
-        await supabase.from('post_votes').upsert({
+        const { data, error } = await supabase.from('post_votes').upsert({
           post_id: post.id,
           user_id: user.id,
           vote_type: newUserVote
         }, {
           onConflict: 'post_id,user_id'
         });
+
+        if (error) throw error;
+        console.log('Vote saved successfully', data);
       } else {
         // Remove the vote record if they're un-voting
-        await supabase
+        const { error } = await supabase
           .from('post_votes')
           .delete()
           .eq('post_id', post.id)
           .eq('user_id', user.id);
+
+        if (error) throw error;
+        console.log('Vote removed successfully');
       }
     } catch (error: any) {
       console.error("Error voting:", error);
@@ -125,6 +134,32 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     }
   };
 
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Check if post is already saved when component mounts
+  useEffect(() => {
+    const checkIfSaved = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('saved_posts')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('post_id', post.id)
+          .maybeSingle();
+
+        if (!error && data) {
+          setIsSaved(true);
+        }
+      } catch (err) {
+        console.error("Error checking saved status:", err);
+      }
+    };
+
+    checkIfSaved();
+  }, [user, post.id]);
+
   const handleSave = async () => {
     if (!user) {
       toast({
@@ -135,24 +170,51 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     }
 
     try {
-      const { error } = await supabase
-        .from('saved_posts')
-        .upsert({
-          user_id: user.id,
-          post_id: post.id
+      if (isSaved) {
+        // If already saved, remove from saved posts
+        const { error } = await supabase
+          .from('saved_posts')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', post.id);
+
+        if (error) throw error;
+
+        setIsSaved(false);
+        toast({
+          title: "Post removed",
+          description: "This post has been removed from your saved items."
         });
+      } else {
+        // If not saved, add to saved posts
+        const { error } = await supabase
+          .from('saved_posts')
+          .insert({
+            user_id: user.id,
+            post_id: post.id
+          });
 
-      if (error) throw error;
+        if (error) {
+          // If error is not a duplicate key error, throw it
+          if (!error.message.includes('duplicate key value')) {
+            throw error;
+          } else {
+            // If it's a duplicate key error, just update the UI state
+            console.log('Post was already saved');
+          }
+        }
 
-      toast({
-        title: "Post saved",
-        description: "This post has been added to your saved items."
-      });
+        setIsSaved(true);
+        toast({
+          title: "Post saved",
+          description: "This post has been added to your saved items."
+        });
+      }
     } catch (error: any) {
-      console.error("Error saving post:", error);
+      console.error("Error saving/unsaving post:", error);
       toast({
         variant: "destructive",
-        title: "Error saving post",
+        title: "Error with saved post",
         description: error.message,
       });
     }
@@ -173,7 +235,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={handleSave}>
-            <BookmarkPlus className="h-4 w-4" />
+            {isSaved ? (
+              <BookmarkPlus className="h-4 w-4 fill-current" />
+            ) : (
+              <BookmarkPlus className="h-4 w-4" />
+            )}
           </Button>
         </div>
         <Link to={`/community/posts/${post.id}`}>
@@ -184,7 +250,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-600 line-clamp-3 mb-4">{post.content}</p>
-        
+
         <div className="flex flex-wrap gap-2">
           {post.tags.map((tag, index) => (
             <Badge key={index} variant="secondary" className="bg-aiml-accent text-aiml-primary">
@@ -195,31 +261,32 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       </CardContent>
       <CardFooter className="border-t pt-4 flex justify-between">
         <div className="flex space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`flex items-center ${votes.userVote === 'up' ? 'text-green-600' : ''}`}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex items-center ${votes.userVote === 'upvote' ? 'text-green-600' : ''}`}
             onClick={() => handleVote('up')}
           >
             <ThumbsUp className="h-4 w-4 mr-1" />
             <span>{votes.upvotes}</span>
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`flex items-center ${votes.userVote === 'down' ? 'text-red-600' : ''}`}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex items-center ${votes.userVote === 'downvote' ? 'text-red-600' : ''}`}
             onClick={() => handleVote('down')}
           >
             <ThumbsDown className="h-4 w-4 mr-1" />
             <span>{votes.downvotes}</span>
           </Button>
         </div>
-        
+
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm" className="flex items-center" asChild>
             <Link to={`/community/posts/${post.id}`}>
               <MessageSquare className="h-4 w-4 mr-1" />
-              <span>{votes.comments}</span>
+              {/* Use post.comments which comes from the initial data */}
+              <span>{post.comments}</span>
             </Link>
           </Button>
           <Button variant="ghost" size="sm">

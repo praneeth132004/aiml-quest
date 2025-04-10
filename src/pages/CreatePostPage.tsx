@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,11 +25,44 @@ type PostFormValues = z.infer<typeof postSchema>;
 
 const CreatePostPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile, isProfileLoading } = useAuth(); // Get profile and loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  
+  const [profileLoadingTimeout, setProfileLoadingTimeout] = useState(false);
+
+  // Log profile loading state for debugging
+  useEffect(() => {
+    console.log('Profile loading state:', {
+      isProfileLoading,
+      profileExists: !!profile,
+      userId: user?.id
+    });
+  }, [isProfileLoading, profile, user]);
+
+  // Add a timeout to handle stuck profile loading state
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (isProfileLoading) {
+      console.log('Profile loading started, setting timeout');
+      // Set a timeout to force the loading state to complete after 5 seconds
+      timeoutId = setTimeout(() => {
+        console.log('Profile loading timeout reached');
+        setProfileLoadingTimeout(true);
+      }, 5000); // 5 seconds timeout
+    } else {
+      setProfileLoadingTimeout(false);
+    }
+
+    return () => {
+      if (timeoutId) {
+        console.log('Clearing profile loading timeout');
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isProfileLoading]);
+
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -58,6 +91,7 @@ const CreatePostPage = () => {
   };
 
   const onSubmit = async (values: PostFormValues) => {
+    // Check for user authentication
     if (!user) {
       toast({
         variant: "destructive",
@@ -68,16 +102,104 @@ const CreatePostPage = () => {
       return;
     }
 
+    // Check for profile
+    if (!profile) {
+      // If profile loading timed out, try to fetch it directly
+      if (profileLoadingTimeout) {
+        try {
+          console.log('Attempting to fetch profile directly');
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (error) throw error;
+          if (!data) throw new Error('Profile not found');
+
+          // Use the fetched profile directly
+          console.log('Successfully fetched profile:', data);
+          // Continue with the submission using the fetched profile
+        } catch (error: any) {
+          console.error('Error fetching profile directly:', error);
+          toast({
+            variant: "destructive",
+            title: "Profile error",
+            description: "Could not load your profile. Please try again later.",
+          });
+          return;
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Profile required",
+          description: "Your profile must be loaded to create a post.",
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
-    
+
     try {
+      // Declare a variable to hold the profile data
+      let profileId = user.id;
+
+      // If we have a profile from context, use that
+      if (profile) {
+        profileId = profile.id;
+      } else if (profileLoadingTimeout) {
+        // If profile loading timed out, try to fetch it directly again
+        try {
+          // First check if profile exists
+          const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('id', user.id);
+
+          if (count && count > 0) {
+            // Profile exists, fetch it
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', user.id)
+              .single();
+
+            if (!error && data) {
+              profileId = data.id;
+            }
+          } else {
+            // Profile doesn't exist, create one
+            console.log('Creating profile for user:', user.id);
+            const { error } = await supabase.from('profiles').insert({
+              id: user.id,
+              username: user.user_metadata?.username || null,
+              full_name: user.user_metadata?.full_name || null,
+              avatar_url: null,
+            });
+
+            if (error && !error.message.includes('duplicate key value')) {
+              throw error;
+            }
+
+            // Use user.id as the profile ID
+            profileId = user.id;
+          }
+        } catch (err) {
+          console.error('Error handling profile:', err);
+          // Continue with user.id as fallback
+        }
+      }
+
+      console.log('Using profile ID for post:', profileId);
+
       const { error } = await supabase
         .from('posts')
         .insert({
           title: values.title,
           content: values.content,
           tags: tags,
-          user_id: user.id,
+          user_id: profileId,
         });
 
       if (error) throw error;
@@ -86,7 +208,7 @@ const CreatePostPage = () => {
         title: "Post created",
         description: "Your post has been successfully published.",
       });
-      
+
       navigate("/community");
     } catch (error: any) {
       toast({
@@ -102,6 +224,25 @@ const CreatePostPage = () => {
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-12">
+        {isProfileLoading && !profileLoadingTimeout && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-yellow-700 text-sm flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading your profile... This may take a moment.
+            </p>
+          </div>
+        )}
+
+        {profileLoadingTimeout && (
+          <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-md">
+            <p className="text-orange-700 text-sm">
+              <strong>Note:</strong> Profile loading is taking longer than expected. You can still create a post, but if you encounter any issues, please try refreshing the page.
+            </p>
+          </div>
+        )}
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -119,9 +260,9 @@ const CreatePostPage = () => {
                     <FormItem>
                       <FormLabel>Title</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter a descriptive title for your post" 
-                          {...field} 
+                        <Input
+                          placeholder="Enter a descriptive title for your post"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -136,10 +277,10 @@ const CreatePostPage = () => {
                     <FormItem>
                       <FormLabel>Content</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Share your thoughts, questions or insights..." 
+                        <Textarea
+                          placeholder="Share your thoughts, questions or insights..."
                           className="min-h-[200px]"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -161,9 +302,9 @@ const CreatePostPage = () => {
                         disabled={tags.length >= 5}
                       />
                     </div>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={addTag}
                       disabled={tags.length >= 5 || !tagInput.trim()}
                     >
@@ -202,8 +343,25 @@ const CreatePostPage = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Posting..." : "Publish Post"}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || (isProfileLoading && !profileLoadingTimeout)}
+                    onClick={() => {
+                      if (profileLoadingTimeout && !profile) {
+                        // If profile loading timed out and we don't have a profile, show an error
+                        toast({
+                          variant: "destructive",
+                          title: "Profile loading error",
+                          description: "There was an issue loading your profile. Please try again.",
+                        });
+                        // Redirect to community page
+                        navigate("/community");
+                      }
+                    }}
+                  >
+                    {isSubmitting ? "Posting..." :
+                     (isProfileLoading && !profileLoadingTimeout) ? "Loading Profile..." :
+                     "Publish Post"}
                   </Button>
                 </div>
               </form>
