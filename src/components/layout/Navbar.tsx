@@ -66,7 +66,7 @@ const Navbar = () => {
                 <Search className="h-4 w-4 mr-2" />
                 Search
               </Button>
-              
+
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -95,7 +95,10 @@ const Navbar = () => {
                       <Link to="/settings">Settings</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={signOut} className="text-red-500 cursor-pointer">
+                    <DropdownMenuItem onClick={() => {
+                      console.log('Logout clicked');
+                      signOut();
+                    }} className="text-red-500 cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Log out</span>
                     </DropdownMenuItem>
@@ -155,7 +158,11 @@ const Navbar = () => {
                   <Button variant="outline" className="w-full justify-start" asChild>
                     <Link to="/settings" onClick={toggleMenu}>Settings</Link>
                   </Button>
-                  <Button variant="destructive" className="w-full" onClick={() => { signOut(); toggleMenu(); }}>
+                  <Button variant="destructive" className="w-full" onClick={() => {
+                    console.log('Mobile logout clicked');
+                    signOut();
+                    toggleMenu();
+                  }}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
                   </Button>
@@ -177,19 +184,19 @@ const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) =>
   </Link>
 );
 
-const MobileNavLink = ({ 
-  to, 
-  children, 
-  icon, 
-  onClick 
-}: { 
-  to: string; 
-  children: React.ReactNode; 
+const MobileNavLink = ({
+  to,
+  children,
+  icon,
+  onClick
+}: {
+  to: string;
+  children: React.ReactNode;
   icon: React.ReactNode;
   onClick: () => void;
 }) => (
-  <Link 
-    to={to} 
+  <Link
+    to={to}
     className="flex items-center py-3 px-2 text-lg border-b border-gray-100"
     onClick={onClick}
   >
