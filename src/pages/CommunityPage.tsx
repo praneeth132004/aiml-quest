@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import PostCard, { Post } from "@/components/community/PostCard";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, TrendingUp, Clock, Star, Bookmark } from "lucide-react"; // Import Bookmark
+import { Search, Plus, TrendingUp, Clock, Star, Bookmark, Loader2 } from "lucide-react"; // Import Bookmark & Loader2
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,29 +16,43 @@ const CommunityPage = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("trending");
     const [posts, setPosts] = useState<Post[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // For initial load
+    const [isLoadingMore, setIsLoadingMore] = useState(false); // For loading more posts
     const [hasError, setHasError] = useState(false);
     const [loadingStage, setLoadingStage] = useState<string>('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasMorePosts, setHasMorePosts] = useState(true);
     const { user } = useAuth();
+    const POSTS_PER_PAGE = 10; // Define page size
 
     // Use refs to track timeouts and prevent duplicate fetches
     const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isFetchingRef = useRef<boolean>(false);
 
-    // Extract the fetch posts function so it can be called directly
-    // Use useCallback to prevent recreation on every render
-    const fetchPosts = useCallback(async () => {
-      // Prevent multiple simultaneous fetches
-      if (isFetchingRef.current) {
-        console.log('Already fetching posts, ignoring duplicate request');
+    // fetchPosts function now handles pagination
+    const fetchPosts = useCallback(async (page = 1) => {
+      // Prevent multiple simultaneous fetches for the same page type
+      if (isFetchingRef.current && ((page === 1 && isLoading) || (page > 1 && isLoadingMore))) {
+        console.log(`Already fetching page ${page}, ignoring duplicate request`);
         return;
       }
 
-      isFetchingRef.current = true;
-      console.log('Starting to fetch posts...');
-      setLoadingStage('Initializing');
+      isFetchingRef.current = true; // Mark as fetching
+      console.log(`Starting to fetch posts for page ${page}...`);
 
-      // Clear any existing timeout
+      if (page === 1) {
+        setIsLoading(true); // Full page load indicator
+        setLoadingStage('Initializing');
+        // setPosts([]); // Clear posts only on initial load (handled by useEffect now)
+        setHasMorePosts(true); // Assume more posts initially
+      } else {
+        setIsLoadingMore(true); // Indicator for loading more
+        setLoadingStage('Loading more posts...');
+      }
+      setHasError(false);
+
+
+      // Clear any existing timeout (might need adjustment for load more)
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
@@ -47,25 +60,26 @@ const CommunityPage = () => {
 
       // Set a new timeout
       loadingTimeoutRef.current = setTimeout(() => {
-        // Only show the timeout error if we're still loading, still fetching, and don't have posts
-        if (isLoading && isFetchingRef.current && posts.length === 0) {
-          console.log('Loading timeout reached, forcing loading state to false');
-          setIsLoading(false);
-          setHasError(true);
-          isFetchingRef.current = false; // Reset the fetching flag
-          toast({
-            variant: "destructive",
-            title: "Loading timeout",
-            description: "Failed to load posts in a reasonable time. Please try again.",
-          });
-        } else {
-          console.log('Loading timeout reached but posts are already loaded or not fetching anymore, ignoring');
-        }
-      }, 20000); // 20 seconds timeout (increased from 15)
+        // Only show the timeout error if we're still loading (initial or more) and haven't fetched anything for this page yet
+        if ((isLoading || isLoadingMore) && isFetchingRef.current) {
+           console.log('Loading timeout reached, forcing loading state to false');
+           if (page === 1) setIsLoading(false);
+           else setIsLoadingMore(false);
+           setHasError(true);
+           isFetchingRef.current = false; // Reset the fetching flag
+           toast({
+             variant: "destructive",
+             title: "Loading timeout",
+             description: "Failed to load posts in a reasonable time. Please try again.",
+           });
+         } else {
+           console.log('Loading timeout reached but posts are already loaded or not fetching anymore, ignoring');
+         }
+      }, 20000); // 20 seconds timeout
 
-      setIsLoading(true);
-      setHasError(false);
-      setPosts([]); // Clear previous posts when tab changes
+      // Calculate range for Supabase query
+      const startIndex = (page - 1) * POSTS_PER_PAGE;
+      const endIndex = startIndex + POSTS_PER_PAGE - 1;
 
     try {
       // Determine sort order based on active tab
@@ -73,12 +87,15 @@ const CommunityPage = () => {
 
       let postData: any[] | null = null;
       let postError: any = null;
+      let query: any = null; // Define query variable outside if/else
 
       if (activeTab === "saved") {
         if (!user) {
           console.log('User not logged in, cannot fetch saved posts');
           setPosts([]); // Show empty list if not logged in
           setIsLoading(false);
+          setIsLoadingMore(false);
+          setHasMorePosts(false);
           isFetchingRef.current = false;
           if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
           return; // Exit early
@@ -108,7 +125,7 @@ const CommunityPage = () => {
           setLoadingStage('Fetching saved post details');
 
           // 2. Fetch the actual posts using the IDs
-          const { data: fetchedPosts, error: fetchedPostsError } = await supabase
+          query = supabase
             .from('posts')
             .select(`
               id,
@@ -119,28 +136,20 @@ const CommunityPage = () => {
               upvotes,
               downvotes,
               comments_count,
-              user_id
-            `)
+              user_id,
+              profiles ( username, full_name, avatar_url ),
+              post_votes ( vote_type, user_id )
+            `) // Join profiles and all votes
             .in('id', savedPostIds)
-            .order('created_at', { ascending: false }); // Order saved posts by creation date
-
-          postData = fetchedPosts;
-          postError = fetchedPostsError;
+            .order('created_at', { ascending: false }) // Order saved posts by creation date
+            .range(startIndex, endIndex); // Add range for pagination
         }
 
       } else {
         // Existing logic for other tabs
-        let query = supabase
+        query = supabase
           .from('posts')
           .select(`
-          id,
-          title,
-          content,
-          created_at,
-          tags,
-          upvotes,
-          downvotes,
-          comments_count,
             id,
             title,
             content,
@@ -149,8 +158,10 @@ const CommunityPage = () => {
             upvotes,
             downvotes,
             comments_count,
-            user_id
-          `);
+            user_id,
+            profiles ( username, full_name, avatar_url ),
+            post_votes ( vote_type, user_id )
+          `); // Join profiles and all votes
 
         if (activeTab === "trending") {
           query = query.order('upvotes', { ascending: false });
@@ -159,40 +170,17 @@ const CommunityPage = () => {
         } else if (activeTab === "most-commented") {
           query = query.order('comments_count', { ascending: false });
         }
-
-        console.log('Executing query for tab:', activeTab);
-        setLoadingStage('Checking database access');
-
-      // First, try a simple count query to check if the table is accessible
-      const { count, error: countError } = await supabase
-        .from('posts')
-        .select('*', { count: 'exact', head: true });
-
-      if (countError) {
-        console.error('Error counting posts:', countError);
-        throw countError;
+        // Add range for pagination to the main query
+        query = query.range(startIndex, endIndex);
       }
 
-      console.log(`Found ${count} posts in database`);
-      setLoadingStage(`Found ${count} posts in database`);
-
-      // Also check if profiles table is accessible
-      const { count: profileCount, error: profileCountError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      if (profileCountError) {
-        console.error('Error counting profiles:', profileCountError);
-        // Don't throw here, just log the error
-      } else {
-        console.log(`Found ${profileCount} profiles in database`);
-      }
-
-        // Now execute the main query
+      // Execute the query only if it was constructed (i.e., not empty saved posts)
+      if (query) {
+        console.log(`Executing query for tab: ${activeTab}, page: ${page}, range: ${startIndex}-${endIndex}`);
         setLoadingStage('Fetching posts');
-        const { data: fetchedPosts, error: fetchedPostsError } = await query;
-        postData = fetchedPosts;
-        postError = fetchedPostsError;
+        const { data: fetchedPostsData, error: fetchedPostsErrorData } = await query;
+        postData = fetchedPostsData;
+        postError = fetchedPostsErrorData;
         console.log('Query completed for tab:', activeTab);
         setLoadingStage('Posts query completed');
       }
@@ -204,84 +192,20 @@ const CommunityPage = () => {
       }
 
       console.log('Fetched posts count:', postData?.length || 0);
-      if (postData && postData.length > 0) {
+      if (postData && postData.length >= 0) { // Allow processing even if 0 posts returned for the page
         console.log('Fetched posts:', postData);
 
         // --- Common processing logic for all tabs ---
         setLoadingStage('Processing post data');
 
-        // Get user votes if logged in
-        let userVotes: Record<string, 'upvote' | 'downvote'> = {}; // Explicitly type userVotes
-        if (user) {
-          console.log('Fetching user votes for user:', user.id);
-          // Fetch votes for the posts currently being displayed
-          const postIdsToFetchVotes = postData.map(p => p.id);
-          if (postIdsToFetchVotes.length > 0) {
-            const { data: votesData, error: votesError } = await supabase
-              .from('post_votes')
-              .select('post_id, vote_type')
-              .eq('user_id', user.id)
-              .in('post_id', postIdsToFetchVotes); // Only fetch votes for relevant posts
-
-            if (votesError) {
-              console.error('Error fetching user votes:', votesError);
-            }
-
-            if (!votesError && votesData) {
-              console.log('User votes:', votesData);
-              // Explicitly type the accumulator in reduce
-              userVotes = votesData.reduce((acc: Record<string, 'upvote' | 'downvote'>, vote) => {
-                // Assuming vote.vote_type from Supabase is 'upvote' or 'downvote'
-                acc[vote.post_id] = vote.vote_type as 'upvote' | 'downvote';
-                return acc;
-              }, {});
-            }
-          } else {
-            console.log('No posts to fetch votes for.');
-          }
-        }
-
         console.log('Formatting posts...');
         setLoadingStage('Formatting posts');
 
-        // Fetch profiles for all posts
-        const userIds = postData.map(post => post.user_id);
-        const uniqueUserIds = [...new Set(userIds)];
-        let profilesMap: Record<string, any> = {};
-
-        if (uniqueUserIds.length > 0) {
-          console.log('Fetching profiles for user IDs:', uniqueUserIds);
-          setLoadingStage('Fetching user profiles');
-
-          // Get profiles in a separate query
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, username, full_name, avatar_url')
-            .in('id', uniqueUserIds);
-
-          if (profilesError) {
-            console.error('Error fetching profiles:', profilesError);
-            // Continue without profile data if there's an error
-          } else if (profilesData) {
-            // Create a map of user_id to profile data
-            profilesData.forEach(profile => {
-              profilesMap[profile.id] = profile;
-            });
-          }
-          console.log('Profiles map:', profilesMap);
-        } else {
-           console.log('No user IDs to fetch profiles for.');
-        }
-
-
         const formattedPosts = postData.map(post => {
-          // Get profile from the map
-          const profile = profilesMap[post.user_id];
-
+          const profile = post.profiles;
           if (!profile) {
             console.warn('Missing profile data for post:', post.id, 'user_id:', post.user_id);
           }
-
           return {
             id: post.id,
             title: post.title,
@@ -291,21 +215,28 @@ const CommunityPage = () => {
               avatar: profile?.avatar_url || "",
               initials: (profile?.full_name || profile?.username || "AU").split(" ").map(n => n[0]).join("").toUpperCase(),
             },
-            createdAt: post.created_at, // Pass the raw timestamp string
+            createdAt: post.created_at,
             tags: post.tags || [],
             upvotes: post.upvotes || 0,
             downvotes: post.downvotes || 0,
             comments: post.comments_count || 0,
-            userVote: userVotes[post.id] || null,
+            userVote: post.post_votes?.find((v: any) => v.user_id === user?.id)?.vote_type || null,
           };
         });
 
         console.log('Setting posts state with formatted posts');
         setLoadingStage('Finalizing');
-        setPosts(formattedPosts);
+        // Append posts if loading more, otherwise set
+        setPosts(prevPosts => page === 1 ? formattedPosts : [...prevPosts, ...formattedPosts]);
+        // Check if fewer posts were returned than requested, indicating no more posts
+        setHasMorePosts(formattedPosts.length === POSTS_PER_PAGE);
+        setCurrentPage(page); // Update current page state
       } else {
-        console.log('No posts data returned');
-        setPosts([]);
+        console.log('No posts data returned for this page');
+        if (page === 1) {
+          setPosts([]); // Clear posts if first page has no data
+        }
+        setHasMorePosts(false); // No more posts available
       }
     } catch (error: any) {
       console.error("Error fetching posts:", error);
@@ -317,78 +248,88 @@ const CommunityPage = () => {
       });
       // Set empty posts array to avoid infinite loading state
       setPosts([]);
+      setHasMorePosts(false); // Ensure no load more button shows on error
     } finally {
-      console.log('Finished fetching posts, setting isLoading to false');
-      setIsLoading(false);
+      console.log(`Finished fetching posts for page ${page}, setting loading states to false`);
+      setIsLoading(false); // Turn off main loader
+      setIsLoadingMore(false); // Turn off 'load more' loader
       setLoadingStage(''); // Clear the loading stage
 
-      // Clear the timeout since we've finished loading (either success or error)
+      // Clear the timeout
       if (loadingTimeoutRef.current) {
         console.log('Clearing loading timeout after fetch completion');
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
       }
 
-      // Reset the fetching flag after a small delay to prevent rapid consecutive fetches
-      setTimeout(() => {
-        isFetchingRef.current = false;
-        console.log('Reset isFetchingRef, ready for next fetch');
-      }, 500);
+      // Reset the fetching flag
+      isFetchingRef.current = false;
+      console.log('Reset isFetchingRef, ready for next fetch');
     }
-  }, [activeTab, user, toast]);
+  }, [activeTab, user, toast]); // Keep dependencies for useCallback
 
-    const resetAndFetchPosts = () => {
-      // Clear any existing state
-      setHasError(false);
-      setIsLoading(true);
+    // Function to handle tab changes
+    const handleTabChange = (tabValue: string) => {
+      if (tabValue === activeTab) return; // Do nothing if clicking the same tab
+      console.log('Tab changed to:', tabValue);
+      setActiveTab(tabValue);
+      // Reset state for the new tab - useEffect will trigger fetchPosts(1)
+      setCurrentPage(1);
       setPosts([]);
-
-      // Clear any existing timeout
+      setHasMorePosts(true);
+      setIsLoading(true); // Show loading spinner immediately
+      setHasError(false);
+      // Cancel any ongoing fetch
+      isFetchingRef.current = false;
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
       }
-
-      // Reset the fetching flag
-      isFetchingRef.current = false;
-
-      // Fetch posts after a small delay to ensure state is reset
-      setTimeout(() => {
-        fetchPosts();
-      }, 100);
     };
 
-    // Effect to fetch posts when component mounts or dependencies change
-    useEffect(() => {
-      console.log('CommunityPage mounted or dependencies changed, fetching posts...');
-      fetchPosts();
+    // Function to handle clicking the load more button
+    const handleLoadMore = () => {
+      if (!isLoadingMore && hasMorePosts && !isFetchingRef.current) {
+        console.log('Load more clicked');
+        fetchPosts(currentPage + 1);
+      }
+    };
 
-      // Clean up function to clear any remaining timeout when component unmounts
+    // Effect to fetch posts when activeTab or user ID changes
+    useEffect(() => {
+      console.log('CommunityPage effect triggered: Fetching posts for tab:', activeTab, 'User ID:', user?.id);
+      // Reset state and fetch page 1 whenever tab or user changes
+      setCurrentPage(1);
+      setPosts([]);
+      setHasMorePosts(true);
+      setIsLoading(true); // Ensure loading state is true for initial fetch
+      setHasError(false);
+      fetchPosts(1); // Fetch page 1
+
+      // Cleanup function (optional, might not be needed here)
       return () => {
+        console.log('Cleanup effect for tab/user change');
+        // Cancel any ongoing fetch if component unmounts or deps change before fetch completes
+        isFetchingRef.current = false;
         if (loadingTimeoutRef.current) {
-          console.log('Component unmounting, clearing loading timeout');
           clearTimeout(loadingTimeoutRef.current);
           loadingTimeoutRef.current = null;
         }
       };
-    }, [fetchPosts]); // fetchPosts already depends on activeTab and user
+    }, [activeTab, user?.id]); // Depend only on tab and user ID
 
-    // Additional effect to handle component unmounting and cleanup
+    // Separate effect for component unmount cleanup (runs only once)
     useEffect(() => {
-      // This effect only runs on mount and unmount
       return () => {
         console.log('CommunityPage unmounting, performing final cleanup');
-        // Clear any timeouts that might be lingering
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
-          loadingTimeoutRef.current = null;
         }
-        // Reset the fetching flag
-        isFetchingRef.current = false;
+        isFetchingRef.current = false; // Ensure flag is reset on unmount
       };
     }, []);
 
-    // Filter posts based on search
+    // Filter posts based on search term (applied after fetching)
     const filteredPosts = posts.filter(post =>
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -398,6 +339,7 @@ const CommunityPage = () => {
     return (
       <PageLayout requireAuth={true}>
         <div className="container mx-auto px-4 py-12">
+          {/* Header and Search Bar */}
           <div className="flex flex-col md:flex-row justify-between items-start mb-8">
             <div>
               <h1 className="text-3xl font-bold mb-2">Community</h1>
@@ -412,7 +354,6 @@ const CommunityPage = () => {
               </Link>
             </Button>
           </div>
-
           <div className="relative mb-8">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
             <Input
@@ -423,85 +364,54 @@ const CommunityPage = () => {
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
             <TabsList>
-              <TabsTrigger
-                value="trending"
-                className="flex items-center"
-              >
-                <TrendingUp className="mr-1 h-4 w-4" />
-                Trending
+              <TabsTrigger value="trending" className="flex items-center">
+                <TrendingUp className="mr-1 h-4 w-4" /> Trending
               </TabsTrigger>
-              <TabsTrigger
-                value="recent"
-                className="flex items-center"
-              >
-                <Clock className="mr-1 h-4 w-4" />
-                Recent
+              <TabsTrigger value="recent" className="flex items-center">
+                <Clock className="mr-1 h-4 w-4" /> Recent
               </TabsTrigger>
-              <TabsTrigger
-                value="most-commented"
-                className="flex items-center"
-              >
-                <Star className="mr-1 h-4 w-4" />
-                Most Discussed
+              <TabsTrigger value="most-commented" className="flex items-center">
+                <Star className="mr-1 h-4 w-4" /> Most Discussed
               </TabsTrigger>
-              <TabsTrigger
-                value="saved"
-                className="flex items-center"
-              >
-                <Bookmark className="mr-1 h-4 w-4" />
-                Saved
+              <TabsTrigger value="saved" className="flex items-center">
+                <Bookmark className="mr-1 h-4 w-4" /> Saved
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="trending">
-              {/* Content will be rendered in the shared space below */}
-            </TabsContent>
-            <TabsContent value="recent">
-              {/* Content will be rendered in the shared space below */}
-            </TabsContent>
-            <TabsContent value="most-commented">
-              {/* Content will be rendered in the shared space below */}
-            </TabsContent>
-            <TabsContent value="saved">
-              {/* Content will be rendered in the shared space below */}
-            </TabsContent>
+            {/* TabsContent are not strictly needed if content is rendered below */}
           </Tabs>
 
+          {/* Post List Area */}
           <div className="space-y-6">
-            {isLoading ? (
+            {/* Initial Loading Spinner */}
+            {isLoading && posts.length === 0 && (
               <div className="py-12 text-center">
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full border-4 border-t-aiml-primary border-r-aiml-primary border-b-gray-200 border-l-gray-200 animate-spin mb-4"></div>
+                  <Loader2 className="h-12 w-12 animate-spin text-aiml-primary mb-4" />
                   <p className="text-gray-500 mb-2">Loading posts...</p>
-                  {loadingStage && (
-                    <p className="text-xs text-gray-400">{loadingStage}</p>
-                  )}
+                  {loadingStage && <p className="text-xs text-gray-400">{loadingStage}</p>}
                 </div>
               </div>
-            ) : hasError ? (
+            )}
+
+            {/* Error Message */}
+            {hasError && !isLoading && (
               <div className="py-12 text-center">
                 <p className="text-red-500 mb-2">Error loading posts</p>
                 <p className="text-gray-500 mb-4">There was a problem loading the community posts.</p>
-                <Button
-                  variant="outline"
-                  className="mr-2"
-                  onClick={resetAndFetchPosts}
-                >
+                <Button variant="outline" className="mr-2" onClick={() => fetchPosts(1)}>
                   Try Again
                 </Button>
-                <Button
-                  variant="outline"
-                  className="mr-2"
-                  onClick={() => window.location.reload()}
-                >
+                <Button variant="outline" onClick={() => window.location.reload()}>
                   Refresh Page
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/community/create-post">Create a New Post</Link>
-                </Button>
               </div>
-            ) : filteredPosts.length > 0 ? (
+            )}
+
+            {/* Post Cards */}
+            {!isLoading && !hasError && filteredPosts.length > 0 && (
               filteredPosts.map((post) => {
                 try {
                   return <PostCard key={post.id} post={post} />;
@@ -514,18 +424,41 @@ const CommunityPage = () => {
                   );
                 }
               })
-            ) : (
+            )}
+
+            {/* No Posts Message */}
+            {!isLoading && !hasError && filteredPosts.length === 0 && (
               <div className="py-12 text-center">
                 <p className="text-gray-500">
                   {activeTab === 'saved'
                     ? (user ? 'You have no saved posts.' : 'Log in to see your saved posts.')
-                    : 'No posts found matching your search.'}
+                    : (searchTerm ? 'No posts found matching your search.' : 'No posts found in this category yet.')}
                 </p>
-                {activeTab !== 'saved' && (
+                {activeTab !== 'saved' && !searchTerm && (
                   <Button variant="outline" className="mt-4" asChild>
-                    <Link to="/community/create-post">Create a New Post</Link>
+                    <Link to="/community/create-post">Create the First Post</Link>
                   </Button>
                 )}
+              </div>
+            )}
+
+            {/* Load More Button */}
+            {!isLoading && !hasError && hasMorePosts && filteredPosts.length > 0 && (
+              <div className="text-center mt-8">
+                <Button
+                  variant="outline"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    "Load More"
+                  )}
+                </Button>
               </div>
             )}
           </div>
