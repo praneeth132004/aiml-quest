@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ThumbsUp, ThumbsDown, Share, BookmarkPlus } from "lucide-react";
+import { MessageSquare, ThumbsUp, ThumbsDown, BookmarkPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -285,12 +285,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           <Button variant="ghost" size="sm" className="flex items-center" asChild>
             <Link to={`/community/posts/${post.id}`}>
               <MessageSquare className="h-4 w-4 mr-1" />
-              {/* Use post.comments which comes from the initial data */}
               <span>{post.comments}</span>
             </Link>
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Share className="h-4 w-4" />
           </Button>
         </div>
       </CardFooter>
