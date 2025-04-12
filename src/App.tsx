@@ -12,6 +12,7 @@ import QuizzesPage from "./pages/QuizzesPage";
 import CommunityPage from "./pages/CommunityPage";
 import CreatePostPage from "./pages/CreatePostPage";
 import PostPage from "./pages/PostPage";
+import ProfilePage from "./pages/ProfilePage"; // Import ProfilePage
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/community/create-post" element={<CreatePostPage />} />
             <Route path="/community/posts/:id" element={<PostPage />} />
+            <Route path="/profile" element={<ProfilePage />} /> {/* Add Profile Route */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
