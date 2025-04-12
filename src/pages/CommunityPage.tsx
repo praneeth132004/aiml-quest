@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, TrendingUp, Clock, Star } from "lucide-react";
+import { Search, Plus, TrendingUp, Clock, Star, Bookmark } from "lucide-react"; // Import Bookmark
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,14 +65,74 @@ const CommunityPage = () => {
 
       setIsLoading(true);
       setHasError(false);
+      setPosts([]); // Clear previous posts when tab changes
 
     try {
       // Determine sort order based on active tab
       console.log('Active tab:', activeTab);
-      // Try a simpler query first without the join
-      let query = supabase
-        .from('posts')
-        .select(`
+
+      let postData: any[] | null = null;
+      let postError: any = null;
+
+      if (activeTab === "saved") {
+        if (!user) {
+          console.log('User not logged in, cannot fetch saved posts');
+          setPosts([]); // Show empty list if not logged in
+          setIsLoading(false);
+          isFetchingRef.current = false;
+          if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+          return; // Exit early
+        }
+
+        console.log('Fetching saved posts for user:', user.id);
+        setLoadingStage('Fetching saved post IDs');
+
+        // 1. Get saved post IDs for the user
+        const { data: savedPostsData, error: savedPostsError } = await supabase
+          .from('saved_posts')
+          .select('post_id')
+          .eq('user_id', user.id);
+
+        if (savedPostsError) {
+          console.error('Error fetching saved post IDs:', savedPostsError);
+          throw savedPostsError;
+        }
+
+        if (!savedPostsData || savedPostsData.length === 0) {
+          console.log('No saved posts found for this user.');
+          setPosts([]); // Set empty array if no saved posts
+          postData = []; // Ensure postData is an empty array
+        } else {
+          const savedPostIds = savedPostsData.map(sp => sp.post_id);
+          console.log('Saved post IDs:', savedPostIds);
+          setLoadingStage('Fetching saved post details');
+
+          // 2. Fetch the actual posts using the IDs
+          const { data: fetchedPosts, error: fetchedPostsError } = await supabase
+            .from('posts')
+            .select(`
+              id,
+              title,
+              content,
+              created_at,
+              tags,
+              upvotes,
+              downvotes,
+              comments_count,
+              user_id
+            `)
+            .in('id', savedPostIds)
+            .order('created_at', { ascending: false }); // Order saved posts by creation date
+
+          postData = fetchedPosts;
+          postError = fetchedPostsError;
+        }
+
+      } else {
+        // Existing logic for other tabs
+        let query = supabase
+          .from('posts')
+          .select(`
           id,
           title,
           content,
@@ -81,19 +141,27 @@ const CommunityPage = () => {
           upvotes,
           downvotes,
           comments_count,
-          user_id
-        `);
+            id,
+            title,
+            content,
+            created_at,
+            tags,
+            upvotes,
+            downvotes,
+            comments_count,
+            user_id
+          `);
 
-      if (activeTab === "trending") {
-        query = query.order('upvotes', { ascending: false });
-      } else if (activeTab === "recent") {
-        query = query.order('created_at', { ascending: false });
-      } else if (activeTab === "most-commented") {
-        query = query.order('comments_count', { ascending: false });
-      }
+        if (activeTab === "trending") {
+          query = query.order('upvotes', { ascending: false });
+        } else if (activeTab === "recent") {
+          query = query.order('created_at', { ascending: false });
+        } else if (activeTab === "most-commented") {
+          query = query.order('comments_count', { ascending: false });
+        }
 
-      console.log('Executing query...');
-      setLoadingStage('Checking database access');
+        console.log('Executing query for tab:', activeTab);
+        setLoadingStage('Checking database access');
 
       // First, try a simple count query to check if the table is accessible
       const { count, error: countError } = await supabase
@@ -120,41 +188,56 @@ const CommunityPage = () => {
         console.log(`Found ${profileCount} profiles in database`);
       }
 
-      // Now execute the main query
-      setLoadingStage('Fetching posts');
-      const { data, error } = await query;
-      console.log('Query completed');
-      setLoadingStage('Posts query completed');
-
-      if (error) {
-        console.error('Supabase query error:', error);
-        throw error;
+        // Now execute the main query
+        setLoadingStage('Fetching posts');
+        const { data: fetchedPosts, error: fetchedPostsError } = await query;
+        postData = fetchedPosts;
+        postError = fetchedPostsError;
+        console.log('Query completed for tab:', activeTab);
+        setLoadingStage('Posts query completed');
       }
 
-      console.log('Fetched posts count:', data?.length || 0);
-      if (data) {
-        console.log('Fetched posts:', data);
+
+      if (postError) {
+        console.error('Supabase query error:', postError);
+        throw postError;
+      }
+
+      console.log('Fetched posts count:', postData?.length || 0);
+      if (postData && postData.length > 0) {
+        console.log('Fetched posts:', postData);
+
+        // --- Common processing logic for all tabs ---
+        setLoadingStage('Processing post data');
 
         // Get user votes if logged in
-        setLoadingStage('Processing post data');
-        let userVotes = {};
+        let userVotes: Record<string, 'upvote' | 'downvote'> = {}; // Explicitly type userVotes
         if (user) {
           console.log('Fetching user votes for user:', user.id);
-          const { data: votesData, error: votesError } = await supabase
-            .from('post_votes')
-            .select('post_id, vote_type')
-            .eq('user_id', user.id);
+          // Fetch votes for the posts currently being displayed
+          const postIdsToFetchVotes = postData.map(p => p.id);
+          if (postIdsToFetchVotes.length > 0) {
+            const { data: votesData, error: votesError } = await supabase
+              .from('post_votes')
+              .select('post_id, vote_type')
+              .eq('user_id', user.id)
+              .in('post_id', postIdsToFetchVotes); // Only fetch votes for relevant posts
 
-          if (votesError) {
-            console.error('Error fetching user votes:', votesError);
-          }
+            if (votesError) {
+              console.error('Error fetching user votes:', votesError);
+            }
 
-          if (!votesError && votesData) {
-            console.log('User votes:', votesData);
-            userVotes = votesData.reduce((acc, vote) => {
-              acc[vote.post_id] = vote.vote_type;
-              return acc;
-            }, {});
+            if (!votesError && votesData) {
+              console.log('User votes:', votesData);
+              // Explicitly type the accumulator in reduce
+              userVotes = votesData.reduce((acc: Record<string, 'upvote' | 'downvote'>, vote) => {
+                // Assuming vote.vote_type from Supabase is 'upvote' or 'downvote'
+                acc[vote.post_id] = vote.vote_type as 'upvote' | 'downvote';
+                return acc;
+              }, {});
+            }
+          } else {
+            console.log('No posts to fetch votes for.');
           }
         }
 
@@ -162,33 +245,36 @@ const CommunityPage = () => {
         setLoadingStage('Formatting posts');
 
         // Fetch profiles for all posts
-        const userIds = data.map(post => post.user_id);
+        const userIds = postData.map(post => post.user_id);
         const uniqueUserIds = [...new Set(userIds)];
+        let profilesMap: Record<string, any> = {};
 
-        console.log('Fetching profiles for user IDs:', uniqueUserIds);
-        setLoadingStage('Fetching user profiles');
+        if (uniqueUserIds.length > 0) {
+          console.log('Fetching profiles for user IDs:', uniqueUserIds);
+          setLoadingStage('Fetching user profiles');
 
-        // Get profiles in a separate query
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url')
-          .in('id', uniqueUserIds);
+          // Get profiles in a separate query
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url')
+            .in('id', uniqueUserIds);
 
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
+          if (profilesError) {
+            console.error('Error fetching profiles:', profilesError);
+            // Continue without profile data if there's an error
+          } else if (profilesData) {
+            // Create a map of user_id to profile data
+            profilesData.forEach(profile => {
+              profilesMap[profile.id] = profile;
+            });
+          }
+          console.log('Profiles map:', profilesMap);
+        } else {
+           console.log('No user IDs to fetch profiles for.');
         }
 
-        // Create a map of user_id to profile data
-        const profilesMap: Record<string, any> = {};
-        if (profilesData) {
-          profilesData.forEach(profile => {
-            profilesMap[profile.id] = profile;
-          });
-        }
 
-        console.log('Profiles map:', profilesMap);
-
-        const formattedPosts = data.map(post => {
+        const formattedPosts = postData.map(post => {
           // Get profile from the map
           const profile = profilesMap[post.user_id];
 
@@ -205,7 +291,7 @@ const CommunityPage = () => {
               avatar: profile?.avatar_url || "",
               initials: (profile?.full_name || profile?.username || "AU").split(" ").map(n => n[0]).join("").toUpperCase(),
             },
-            createdAt: new Date(post.created_at).toLocaleDateString(),
+            createdAt: post.created_at, // Pass the raw timestamp string
             tags: post.tags || [],
             upvotes: post.upvotes || 0,
             downvotes: post.downvotes || 0,
@@ -360,6 +446,13 @@ const CommunityPage = () => {
                 <Star className="mr-1 h-4 w-4" />
                 Most Discussed
               </TabsTrigger>
+              <TabsTrigger
+                value="saved"
+                className="flex items-center"
+              >
+                <Bookmark className="mr-1 h-4 w-4" />
+                Saved
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="trending">
               {/* Content will be rendered in the shared space below */}
@@ -368,6 +461,9 @@ const CommunityPage = () => {
               {/* Content will be rendered in the shared space below */}
             </TabsContent>
             <TabsContent value="most-commented">
+              {/* Content will be rendered in the shared space below */}
+            </TabsContent>
+            <TabsContent value="saved">
               {/* Content will be rendered in the shared space below */}
             </TabsContent>
           </Tabs>
@@ -420,10 +516,16 @@ const CommunityPage = () => {
               })
             ) : (
               <div className="py-12 text-center">
-                <p className="text-gray-500">No posts found matching your search.</p>
-                <Button variant="outline" className="mt-4" asChild>
-                  <Link to="/community/create-post">Create a New Post</Link>
-                </Button>
+                <p className="text-gray-500">
+                  {activeTab === 'saved'
+                    ? (user ? 'You have no saved posts.' : 'Log in to see your saved posts.')
+                    : 'No posts found matching your search.'}
+                </p>
+                {activeTab !== 'saved' && (
+                  <Button variant="outline" className="mt-4" asChild>
+                    <Link to="/community/create-post">Create a New Post</Link>
+                  </Button>
+                )}
               </div>
             )}
           </div>

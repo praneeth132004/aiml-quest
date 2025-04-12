@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { formatDistanceToNow, parseISO } from 'date-fns';
 
 export interface Post {
   id: string;
@@ -124,7 +125,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       setVotes({
         upvotes: post.upvotes,
         downvotes: post.downvotes,
-        userVote: null,
+        userVote: (post.userVote || null) as 'upvote' | 'downvote' | null, // Explicitly cast type on revert
       });
       toast({
         variant: "destructive",
@@ -231,7 +232,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             </Avatar>
             <div>
               <p className="text-sm font-medium">{post.author.name}</p>
-              <p className="text-xs text-gray-500">{post.createdAt}</p>
+              <p className="text-xs text-gray-500">
+                {post.createdAt ? formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true }) : 'Unknown date'}
+              </p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={handleSave}>

@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, ThumbsDown, Share, ArrowLeft, BookmarkPlus } from "lucide-react";
+import { ThumbsUp, ThumbsDown, ArrowLeft, BookmarkPlus } from "lucide-react"; // Removed Share
+import { formatDistanceToNow, parseISO } from 'date-fns'; // Import date-fns functions
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -171,6 +172,9 @@ const PostPage = () => {
       return;
     }
 
+    // Capture the state before optimistic update
+    const originalVotesState = { ...votes };
+
     try {
       let newUpvotes = votes.upvotes;
       let newDownvotes = votes.downvotes;
@@ -205,7 +209,7 @@ const PostPage = () => {
       setVotes({
         upvotes: newUpvotes,
         downvotes: newDownvotes,
-        userVote: newUserVote,
+        userVote: newUserVote as 'upvote' | 'downvote' | null, // Explicitly cast newUserVote
       });
 
       console.log('Saving vote:', {
@@ -239,12 +243,8 @@ const PostPage = () => {
       }
     } catch (error: any) {
       console.error("Error voting:", error);
-      // Revert the optimistic update on error
-      setVotes({
-        upvotes: post.upvotes,
-        downvotes: post.downvotes,
-        userVote: null,
-      });
+      // Revert to the captured original state on error
+      setVotes(originalVotesState);
       toast({
         variant: "destructive",
         title: "Error recording vote",
@@ -322,7 +322,9 @@ const PostPage = () => {
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium">{post.profiles?.full_name || post.profiles?.username || "Anonymous User"}</p>
-                  <p className="text-xs text-gray-500">{new Date(post.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">
+                    {post.created_at ? formatDistanceToNow(parseISO(post.created_at), { addSuffix: true }) : 'Unknown date'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -375,9 +377,7 @@ const PostPage = () => {
                     <BookmarkPlus className="h-4 w-4" />
                   )}
                 </Button>
-                <Button variant="ghost" size="sm">
-                  <Share className="h-4 w-4" />
-                </Button>
+                {/* Share button removed */}
               </div>
             </div>
           </CardContent>
