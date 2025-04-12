@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import PostCard, { Post } from "@/components/community/PostCard";
 import { Input } from "@/components/ui/input";
@@ -19,14 +19,52 @@ const CommunityPage = () => {
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
+    const [loadingStage, setLoadingStage] = useState<string>('');
     const { user } = useAuth();
+
+    // Use refs to track timeouts and prevent duplicate fetches
+    const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isFetchingRef = useRef<boolean>(false);
 
     // Extract the fetch posts function so it can be called directly
     // Use useCallback to prevent recreation on every render
     const fetchPosts = useCallback(async () => {
-    console.log('Starting to fetch posts...');
-    setIsLoading(true);
-    setHasError(false);
+      // Prevent multiple simultaneous fetches
+      if (isFetchingRef.current) {
+        console.log('Already fetching posts, ignoring duplicate request');
+        return;
+      }
+
+      isFetchingRef.current = true;
+      console.log('Starting to fetch posts...');
+      setLoadingStage('Initializing');
+
+      // Clear any existing timeout
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+
+      // Set a new timeout
+      loadingTimeoutRef.current = setTimeout(() => {
+        // Only show the timeout error if we're still loading, still fetching, and don't have posts
+        if (isLoading && isFetchingRef.current && posts.length === 0) {
+          console.log('Loading timeout reached, forcing loading state to false');
+          setIsLoading(false);
+          setHasError(true);
+          isFetchingRef.current = false; // Reset the fetching flag
+          toast({
+            variant: "destructive",
+            title: "Loading timeout",
+            description: "Failed to load posts in a reasonable time. Please try again.",
+          });
+        } else {
+          console.log('Loading timeout reached but posts are already loaded or not fetching anymore, ignoring');
+        }
+      }, 20000); // 20 seconds timeout (increased from 15)
+
+      setIsLoading(true);
+      setHasError(false);
 
     try {
       // Determine sort order based on active tab
@@ -55,6 +93,7 @@ const CommunityPage = () => {
       }
 
       console.log('Executing query...');
+      setLoadingStage('Checking database access');
 
       // First, try a simple count query to check if the table is accessible
       const { count, error: countError } = await supabase
@@ -67,6 +106,7 @@ const CommunityPage = () => {
       }
 
       console.log(`Found ${count} posts in database`);
+      setLoadingStage(`Found ${count} posts in database`);
 
       // Also check if profiles table is accessible
       const { count: profileCount, error: profileCountError } = await supabase
@@ -81,8 +121,10 @@ const CommunityPage = () => {
       }
 
       // Now execute the main query
+      setLoadingStage('Fetching posts');
       const { data, error } = await query;
       console.log('Query completed');
+      setLoadingStage('Posts query completed');
 
       if (error) {
         console.error('Supabase query error:', error);
@@ -94,6 +136,7 @@ const CommunityPage = () => {
         console.log('Fetched posts:', data);
 
         // Get user votes if logged in
+        setLoadingStage('Processing post data');
         let userVotes = {};
         if (user) {
           console.log('Fetching user votes for user:', user.id);
@@ -116,12 +159,14 @@ const CommunityPage = () => {
         }
 
         console.log('Formatting posts...');
+        setLoadingStage('Formatting posts');
 
         // Fetch profiles for all posts
         const userIds = data.map(post => post.user_id);
         const uniqueUserIds = [...new Set(userIds)];
 
         console.log('Fetching profiles for user IDs:', uniqueUserIds);
+        setLoadingStage('Fetching user profiles');
 
         // Get profiles in a separate query
         const { data: profilesData, error: profilesError } = await supabase
@@ -170,6 +215,7 @@ const CommunityPage = () => {
         });
 
         console.log('Setting posts state with formatted posts');
+        setLoadingStage('Finalizing');
         setPosts(formattedPosts);
       } else {
         console.log('No posts data returned');
@@ -188,34 +234,73 @@ const CommunityPage = () => {
     } finally {
       console.log('Finished fetching posts, setting isLoading to false');
       setIsLoading(false);
+      setLoadingStage(''); // Clear the loading stage
+
+      // Clear the timeout since we've finished loading (either success or error)
+      if (loadingTimeoutRef.current) {
+        console.log('Clearing loading timeout after fetch completion');
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+
+      // Reset the fetching flag after a small delay to prevent rapid consecutive fetches
+      setTimeout(() => {
+        isFetchingRef.current = false;
+        console.log('Reset isFetchingRef, ready for next fetch');
+      }, 500);
     }
   }, [activeTab, user, toast]);
 
     const resetAndFetchPosts = () => {
-      fetchPosts();
+      // Clear any existing state
+      setHasError(false);
+      setIsLoading(true);
+      setPosts([]);
+
+      // Clear any existing timeout
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+
+      // Reset the fetching flag
+      isFetchingRef.current = false;
+
+      // Fetch posts after a small delay to ensure state is reset
+      setTimeout(() => {
+        fetchPosts();
+      }, 100);
     };
 
+    // Effect to fetch posts when component mounts or dependencies change
     useEffect(() => {
-      // Set a timeout to ensure loading state doesn't get stuck
-      const loadingTimeout = setTimeout(() => {
-        if (isLoading) {
-          console.log('Loading timeout reached, forcing loading state to false');
-          setIsLoading(false);
-          setPosts([]);
-          toast({
-            variant: "destructive",
-            title: "Loading timeout",
-            description: "Failed to load posts in a reasonable time. Please try again.",
-          });
-        }
-      }, 10000); // 10 seconds timeout
-
-      // Call the fetchPosts function when the component mounts or dependencies change
+      console.log('CommunityPage mounted or dependencies changed, fetching posts...');
       fetchPosts();
 
-      // Clean up the timeout
-      return () => clearTimeout(loadingTimeout);
+      // Clean up function to clear any remaining timeout when component unmounts
+      return () => {
+        if (loadingTimeoutRef.current) {
+          console.log('Component unmounting, clearing loading timeout');
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+      };
     }, [fetchPosts]); // fetchPosts already depends on activeTab and user
+
+    // Additional effect to handle component unmounting and cleanup
+    useEffect(() => {
+      // This effect only runs on mount and unmount
+      return () => {
+        console.log('CommunityPage unmounting, performing final cleanup');
+        // Clear any timeouts that might be lingering
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+        // Reset the fetching flag
+        isFetchingRef.current = false;
+      };
+    }, []);
 
     // Filter posts based on search
     const filteredPosts = posts.filter(post =>
@@ -290,7 +375,13 @@ const CommunityPage = () => {
           <div className="space-y-6">
             {isLoading ? (
               <div className="py-12 text-center">
-                <p className="text-gray-500">Loading posts...</p>
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full border-4 border-t-aiml-primary border-r-aiml-primary border-b-gray-200 border-l-gray-200 animate-spin mb-4"></div>
+                  <p className="text-gray-500 mb-2">Loading posts...</p>
+                  {loadingStage && (
+                    <p className="text-xs text-gray-400">{loadingStage}</p>
+                  )}
+                </div>
               </div>
             ) : hasError ? (
               <div className="py-12 text-center">
