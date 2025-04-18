@@ -1,0 +1,88 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect fill="#f8f9fa" width="800" height="600"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+  
+  <!-- PageLayout Component -->
+  <g>
+    <rect x="300" y="50" width="200" height="100" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="400" y="90" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#7e22ce">PageLayout</text>
+    <text x="400" y="115" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Main container component</text>
+  </g>
+  
+  <!-- Navbar Component -->
+  <g>
+    <rect x="50" y="200" width="200" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="150" y="240" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#7e22ce">Navbar</text>
+    <text x="150" y="260" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Navigation header</text>
+  </g>
+  
+  <!-- Page Content Component -->
+  <g>
+    <rect x="300" y="200" width="200" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="400" y="240" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#7e22ce">Page Content</text>
+    <text x="400" y="260" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Main content area</text>
+  </g>
+  
+  <!-- Footer Component -->
+  <g>
+    <rect x="550" y="200" width="200" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="650" y="240" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#7e22ce">Footer</text>
+    <text x="650" y="260" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Page footer</text>
+  </g>
+  
+  <!-- PostCard Component -->
+  <g>
+    <rect x="50" y="350" width="140" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="120" y="380" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#7e22ce">PostCard</text>
+    <text x="120" y="400" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Community post</text>
+  </g>
+  
+  <!-- RoadmapCard Component -->
+  <g>
+    <rect x="220" y="350" width="140" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="290" y="380" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#7e22ce">RoadmapCard</text>
+    <text x="290" y="400" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Learning path item</text>
+  </g>
+  
+  <!-- QuizCard Component -->
+  <g>
+    <rect x="390" y="350" width="140" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="460" y="380" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#7e22ce">QuizCard</text>
+    <text x="460" y="400" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Quiz display</text>
+  </g>
+  
+  <!-- ShadCN UI Components -->
+  <g>
+    <rect x="560" y="350" width="140" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="630" y="380" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#7e22ce">UI Components</text>
+    <text x="630" y="400" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Shadcn/UI library</text>
+  </g>
+  
+  <!-- Auth Components -->
+  <g>
+    <rect x="390" y="460" width="140" height="80" rx="5" ry="5" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="460" y="490" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#7e22ce">Auth Components</text>
+    <text x="460" y="510" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#64748b">Login/Signup forms</text>
+  </g>
+  
+  <!-- Relationships -->
+  <path d="M400 150 L150 200" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M400 150 L400 200" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M400 150 L650 200" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <path d="M400 280 L120 350" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M400 280 L290 350" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M400 280 L460 350" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M400 280 L630 350" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M400 280 L460 460" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <path d="M120 430 L400 500" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow)"/>
+  <path d="M290 430 L400 500" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow)"/>
+  <path d="M460 430 L460 460" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow)"/>
+  <path d="M630 430 L500 500" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow)"/>
+</svg>
