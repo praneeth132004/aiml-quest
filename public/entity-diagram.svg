@@ -1,0 +1,77 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect fill="#f8f9fa" width="800" height="600"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#0ea5e9"/>
+    </marker>
+  </defs>
+  
+  <!-- Users/Profiles Table -->
+  <g>
+    <rect x="50" y="50" width="220" height="180" rx="10" ry="10" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
+    <text x="160" y="80" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#0369a1">Users/Profiles</text>
+    <line x1="70" y1="90" x2="250" y2="90" stroke="#0ea5e9" stroke-width="1"/>
+    
+    <text x="80" y="115" font-family="sans-serif" font-size="14" fill="#334155">id: UUID (PK)</text>
+    <text x="80" y="140" font-family="sans-serif" font-size="14" fill="#334155">username: string</text>
+    <text x="80" y="165" font-family="sans-serif" font-size="14" fill="#334155">full_name: string</text>
+    <text x="80" y="190" font-family="sans-serif" font-size="14" fill="#334155">avatar_url: string</text>
+    <text x="80" y="215" font-family="sans-serif" font-size="14" fill="#334155">experience_level: string</text>
+  </g>
+  
+  <!-- Posts Table -->
+  <g>
+    <rect x="530" y="50" width="220" height="200" rx="10" ry="10" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
+    <text x="640" y="80" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#0369a1">Posts</text>
+    <line x1="550" y1="90" x2="730" y2="90" stroke="#0ea5e9" stroke-width="1"/>
+    
+    <text x="560" y="115" font-family="sans-serif" font-size="14" fill="#334155">id: UUID (PK)</text>
+    <text x="560" y="140" font-family="sans-serif" font-size="14" fill="#334155">title: string</text>
+    <text x="560" y="165" font-family="sans-serif" font-size="14" fill="#334155">content: string</text>
+    <text x="560" y="190" font-family="sans-serif" font-size="14" fill="#334155">user_id: UUID (FK)</text>
+    <text x="560" y="215" font-family="sans-serif" font-size="14" fill="#334155">tags: string[]</text>
+    <text x="560" y="240" font-family="sans-serif" font-size="14" fill="#334155">upvotes: number</text>
+  </g>
+  
+  <!-- Post Votes Table -->
+  <g>
+    <rect x="290" y="350" width="220" height="180" rx="10" ry="10" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
+    <text x="400" y="380" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#0369a1">Post Votes</text>
+    <line x1="310" y1="390" x2="490" y2="390" stroke="#0ea5e9" stroke-width="1"/>
+    
+    <text x="320" y="415" font-family="sans-serif" font-size="14" fill="#334155">id: UUID (PK)</text>
+    <text x="320" y="440" font-family="sans-serif" font-size="14" fill="#334155">post_id: UUID (FK)</text>
+    <text x="320" y="465" font-family="sans-serif" font-size="14" fill="#334155">user_id: UUID (FK)</text>
+    <text x="320" y="490" font-family="sans-serif" font-size="14" fill="#334155">vote_type: string</text>
+    <text x="320" y="515" font-family="sans-serif" font-size="14" fill="#334155">created_at: timestamp</text>
+  </g>
+  
+  <!-- Saved Posts Table -->
+  <g>
+    <rect x="550" y="350" width="220" height="140" rx="10" ry="10" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
+    <text x="660" y="380" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#0369a1">Saved Posts</text>
+    <line x1="570" y1="390" x2="750" y2="390" stroke="#0ea5e9" stroke-width="1"/>
+    
+    <text x="580" y="415" font-family="sans-serif" font-size="14" fill="#334155">id: UUID (PK)</text>
+    <text x="580" y="440" font-family="sans-serif" font-size="14" fill="#334155">post_id: UUID (FK)</text>
+    <text x="580" y="465" font-family="sans-serif" font-size="14" fill="#334155">user_id: UUID (FK)</text>
+    <text x="580" y="490" font-family="sans-serif" font-size="14" fill="#334155">created_at: timestamp</text>
+  </g>
+  
+  <!-- Relationships -->
+  <path d="M270 140 L530 140" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="390" y="130" font-family="sans-serif" font-size="14" fill="#0ea5e9">Creates</text>
+  
+  <path d="M160 230 L400 350" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="240" y="280" font-family="sans-serif" font-size="14" fill="#0ea5e9">Votes on</text>
+  
+  <path d="M160 230 L630 350" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="340" y="280" font-family="sans-serif" font-size="14" fill="#0ea5e9">Saves</text>
+  
+  <path d="M640 250 L520 370" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="590" y="300" font-family="sans-serif" font-size="14" fill="#0ea5e9">Has</text>
+  
+  <path d="M640 250 L660 350" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="670" y="300" font-family="sans-serif" font-size="14" fill="#0ea5e9">Can be</text>
+</svg>
