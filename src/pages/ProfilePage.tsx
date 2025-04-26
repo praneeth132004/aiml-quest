@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import PageLayout from "@/components/layout/PageLayout";
+// Removed PageLayout import as it's handled by routing now
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -153,10 +153,10 @@ const ProfilePage = () => {
   };
 
   return (
-    <PageLayout requireAuth={true}>
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-8">User Profile</h1>
-        <Card>
+    // Removed PageLayout wrapper
+    <div className="container mx-auto px-4 py-12 max-w-2xl">
+      <h1 className="text-3xl font-bold mb-8">User Profile</h1>
+      <Card>
           <CardHeader>
             <CardTitle>Profile Details</CardTitle>
             <CardDescription>View and manage your profile information.</CardDescription>
@@ -250,8 +250,8 @@ const ProfilePage = () => {
             </CardFooter>
           )}
         </Card>
-      </div>
-    </PageLayout>
+    </div>
+    // Removed closing PageLayout tag
   );
 };
 

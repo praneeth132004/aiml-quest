@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ClassDiagramPage from "./pages/ClassDiagramPage";
+import PageLayout from "./components/layout/PageLayout"; // Import PageLayout
 
 const queryClient = new QueryClient();
 
@@ -28,18 +29,22 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
+            {/* Routes without Navbar/Footer */}
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/roadmap" element={<RoadmapPage />} />
-            <Route path="/quizzes" element={<QuizzesPage />} />
-            <Route path="/community" element={<CommunityPage />} />
-            <Route path="/community/create-post" element={<CreatePostPage />} />
-            <Route path="/community/posts/:id" element={<PostPage />} />
-            <Route path="/profile" element={<ProfilePage />} /> {/* Add Profile Route */}
-            <Route path="/architecture" element={<ClassDiagramPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+            {/* Routes with Navbar/Footer */}
+            <Route path="/" element={<PageLayout><Index /></PageLayout>} />
+            <Route path="/roadmap" element={<PageLayout requireAuth={true}><RoadmapPage /></PageLayout>} />
+            <Route path="/quizzes" element={<PageLayout requireAuth={true}><QuizzesPage /></PageLayout>} />
+            <Route path="/community" element={<PageLayout requireAuth={true}><CommunityPage /></PageLayout>} />
+            <Route path="/community/create-post" element={<PageLayout requireAuth={true}><CreatePostPage /></PageLayout>} />
+            <Route path="/community/posts/:id" element={<PageLayout requireAuth={true}><PostPage /></PageLayout>} />
+            <Route path="/profile" element={<PageLayout requireAuth={true}><ProfilePage /></PageLayout>} />
+            <Route path="/architecture" element={<PageLayout><ClassDiagramPage /></PageLayout>} />
+
+            {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

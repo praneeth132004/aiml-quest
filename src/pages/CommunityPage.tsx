@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import PageLayout from "@/components/layout/PageLayout";
+// Removed PageLayout import as it's handled by routing now
 import PostCard, { Post } from "@/components/community/PostCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -337,10 +337,10 @@ const CommunityPage = () => {
     );
 
     return (
-      <PageLayout requireAuth={true}>
-        <div className="container mx-auto px-4 py-12">
-          {/* Header and Search Bar */}
-          <div className="flex flex-col md:flex-row justify-between items-start mb-8">
+      // Removed PageLayout wrapper
+      <div className="container mx-auto px-4 py-12">
+        {/* Header and Search Bar */}
+        <div className="flex flex-col md:flex-row justify-between items-start mb-8">
             <div>
               <h1 className="text-3xl font-bold mb-2">Community</h1>
               <p className="text-gray-600">
@@ -462,21 +462,21 @@ const CommunityPage = () => {
               </div>
             )}
           </div>
-        </div>
-      </PageLayout>
+      </div>
+      // Removed closing PageLayout tag
     );
   } catch (error) {
     console.error('Error rendering CommunityPage:', error);
     return (
-      <PageLayout requireAuth={true}>
-        <div className="container mx-auto px-4 py-12">
-          <div className="bg-red-50 border border-red-200 rounded-md p-6 text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
+      // Removed PageLayout wrapper from catch block
+      <div className="container mx-auto px-4 py-12">
+        <div className="bg-red-50 border border-red-200 rounded-md p-6 text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
             <p className="text-gray-700 mb-6">We encountered an error while loading the community page.</p>
             <Button onClick={() => window.location.reload()}>Refresh Page</Button>
           </div>
-        </div>
-      </PageLayout>
+      </div>
+      // Removed closing PageLayout tag from catch block
     );
   }
 };

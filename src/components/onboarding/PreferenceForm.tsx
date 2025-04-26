@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,10 +20,14 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PreferenceForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [formState, setFormState] = useState({
     goalArea: "",
     experienceLevel: "",
@@ -41,19 +44,77 @@ const PreferenceForm = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to create a roadmap.",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    // Validate form
+    if (!formState.goalArea || !formState.experienceLevel || !formState.learningStyle) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please fill out all fields.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate API call to generate roadmap
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Format preferences for database
+      const preferences = {
+        goalArea: formState.goalArea,
+        experienceLevel: formState.experienceLevel,
+        timeCommitment: formState.timeCommitment[0],
+        learningStyle: formState.learningStyle,
+      };
+
+      // Use the simplified function that should complete quickly
+      const { data, error } = await supabase.rpc('create_simple_roadmap', {
+        p_user_id: user.id,
+        p_preferences: preferences
+      });
+
+      if (error) throw error;
+
+      console.log('Roadmap created successfully with ID:', data);
+
       toast({
         title: "Preferences saved!",
         description: "Your personalized learning roadmap is ready.",
       });
+
+      // Navigate to roadmap page regardless of whether we timed out or not
       navigate("/roadmap");
-    }, 2000);
+    } catch (error: any) {
+      console.error('Error creating roadmap:', error);
+
+      // If it's a timeout error, we still want to navigate to the roadmap
+      if (error.message && error.message.includes('timed out')) {
+        toast({
+          title: "Preferences saved",
+          description: error.message,
+        });
+        navigate("/roadmap");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error creating roadmap",
+          description: error.message || "An unexpected error occurred.",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -147,7 +208,14 @@ const PreferenceForm = () => {
           onClick={handleSubmit}
           className="w-full"
         >
-          {isSubmitting ? "Generating Your Roadmap..." : "Create My Learning Roadmap"}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating Your Roadmap...
+            </>
+          ) : (
+            "Create My Learning Roadmap"
+          )}
         </Button>
       </CardFooter>
     </Card>

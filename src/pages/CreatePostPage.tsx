@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Pencil, Tag, X } from "lucide-react";
-import PageLayout from "@/components/layout/PageLayout";
+// Removed PageLayout import as it's handled by routing now
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Tables } from "@/integrations/supabase/types"; // Import Tables type
 
 const postSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(100, "Title cannot exceed 100 characters"),
@@ -147,6 +148,7 @@ const CreatePostPage = () => {
 
       // If we have a profile from context, use that
       if (profile) {
+        // Rely on the type from useAuth context
         profileId = profile.id;
       } else if (profileLoadingTimeout) {
         // If profile loading timed out, try to fetch it directly again
@@ -222,10 +224,10 @@ const CreatePostPage = () => {
   };
 
   return (
-    <PageLayout requireAuth={true}>
-      <div className="container mx-auto px-4 py-12">
-        {isProfileLoading && !profileLoadingTimeout && (
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+    // Removed PageLayout wrapper
+    <div className="container mx-auto px-4 py-12">
+      {isProfileLoading && !profileLoadingTimeout && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
             <p className="text-yellow-700 text-sm flex items-center">
               <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -368,8 +370,8 @@ const CreatePostPage = () => {
             </Form>
           </CardContent>
         </Card>
-      </div>
-    </PageLayout>
+    </div>
+    // Removed closing PageLayout tag
   );
 };
 

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import PageLayout from "@/components/layout/PageLayout";
+// Removed PageLayout import as it's handled by routing now
 import QuizCard, { Quiz } from "@/components/quizzes/QuizCard";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,10 +82,10 @@ const QuizzesPage = () => {
   });
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-2">Quizzes & Assessments</h1>
-        <p className="text-gray-600 mb-8">
+    // Removed PageLayout wrapper
+    <div className="container mx-auto px-4 py-12">
+      <h1 className="text-3xl font-bold mb-2">Quizzes & Assessments</h1>
+      <p className="text-gray-600 mb-8">
           Test your knowledge and track your progress with these interactive quizzes.
         </p>
 
@@ -121,8 +121,8 @@ const QuizzesPage = () => {
             </div>
           )}
         </div>
-      </div>
-    </PageLayout>
+    </div>
+    // Removed closing PageLayout tag
   );
 };
 
