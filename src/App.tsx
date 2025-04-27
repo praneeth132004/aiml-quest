@@ -9,6 +9,7 @@ import AuthPage from "./pages/AuthPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import RoadmapPage from "./pages/RoadmapPage";
 import QuizzesPage from "./pages/QuizzesPage";
+import CoursesPage from "./pages/CoursesPage"; // Import CoursesPage
 import CommunityPage from "./pages/CommunityPage";
 import CreatePostPage from "./pages/CreatePostPage";
 import PostPage from "./pages/PostPage";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/" element={<PageLayout><Index /></PageLayout>} />
             <Route path="/roadmap" element={<PageLayout requireAuth={true}><RoadmapPage /></PageLayout>} />
             <Route path="/quizzes" element={<PageLayout requireAuth={true}><QuizzesPage /></PageLayout>} />
+            <Route path="/courses" element={<PageLayout requireAuth={true}><CoursesPage /></PageLayout>} /> {/* Add Courses Route */}
             <Route path="/community" element={<PageLayout requireAuth={true}><CommunityPage /></PageLayout>} />
             <Route path="/community/create-post" element={<PageLayout requireAuth={true}><CreatePostPage /></PageLayout>} />
             <Route path="/community/posts/:id" element={<PageLayout requireAuth={true}><PostPage /></PageLayout>} />

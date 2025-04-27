@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables, Json } from '@/integrations/supabase/types'; // Added Json
 import type { Module } from '@/components/roadmap/RoadmapCard';
+import { allRoadmapModules } from '@/data/roadmapModules'; // Import static data
+
+// Define the expected structure of the preferences JSON object
+// Adjust this based on the actual structure confirmed previously
+interface UserPreferences {
+  difficulty: string;
+  interests: string[];
+  learningStyles: string[];
+  weeklyCommitment: number;
+}
 
 export const useRoadmap = (userId: string) => {
   const [modules, setModules] = useState<Module[]>([]);
@@ -21,94 +31,97 @@ export const useRoadmap = (userId: string) => {
     try {
       setLoading(true);
 
-      // Fetch user's roadmap
+      // Fetch user's roadmap preferences
       const { data: roadmap, error: roadmapError } = await supabase
         .from('user_roadmaps')
-        .select('modules')
+        .select('preferences') // Fetch preferences instead of modules
         .eq('user_id', userId)
-        .maybeSingle(); // Use maybeSingle instead of single to handle case when no roadmap exists
+        .maybeSingle();
 
       if (roadmapError && roadmapError.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
         throw roadmapError;
       }
 
-      // If no roadmap exists, redirect to onboarding
-      if (!roadmap) {
+      // If no roadmap or preferences exist, treat as no roadmap (user needs onboarding)
+      if (!roadmap || !roadmap.preferences) {
         setHasRoadmap(false);
         setLoading(false);
         return;
       }
 
-      // If roadmap exists but has no modules yet, still show the roadmap page
-      // but with a loading state until modules are populated
-      if (!roadmap.modules || roadmap.modules.length === 0) {
-        setHasRoadmap(true);
-        setLoading(true);
+      // We have preferences, proceed to filter static modules
+      setHasRoadmap(true);
+      const userPreferences = roadmap.preferences as UserPreferences; // Type assertion
 
-        // Poll for modules every 2 seconds for up to 30 seconds
-        let attempts = 0;
-        const maxAttempts = 15;
-        const pollInterval = setInterval(async () => {
-          attempts++;
+      // Filter static modules based on preferences
+      // Note: This assumes preferences.interests maps to module.category
+      // and preferences.learningStyles maps to module.learning_style
+      // Adjust filtering logic if the mapping is different
+      const filteredModulesData = allRoadmapModules.filter(module => {
+        // Safely check difficulty preference
+        const difficultyMatch = userPreferences.difficulty
+          ? module.difficulty_level.toLowerCase() === userPreferences.difficulty.toLowerCase()
+          : true; // Default to true if preference is missing
 
-          const { data: updatedRoadmap, error: pollError } = await supabase
-            .from('user_roadmaps')
-            .select('modules')
-            .eq('user_id', userId)
-            .maybeSingle();
+        // Safely check interests preference
+        const interestMatch = userPreferences.interests && Array.isArray(userPreferences.interests)
+          ? userPreferences.interests.includes(module.category)
+          : true; // Default to true if preference is missing or invalid
 
-          if (pollError) {
-            clearInterval(pollInterval);
-            setLoading(false);
-            return;
-          }
+        // Optional: Add learning style matching if needed (with safety checks)
+        const styleMatch = userPreferences.learningStyles && Array.isArray(userPreferences.learningStyles)
+          ? module.learning_style.some(style => userPreferences.learningStyles.includes(style))
+          : true; // Default to true if preference is missing or invalid
 
-          if (updatedRoadmap && updatedRoadmap.modules && updatedRoadmap.modules.length > 0) {
-            clearInterval(pollInterval);
-            fetchRoadmap(); // Reload the roadmap with modules
-            return;
-          }
+        return difficultyMatch && interestMatch && styleMatch;
+      });
 
-          if (attempts >= maxAttempts) {
-            clearInterval(pollInterval);
-            setLoading(false);
-          }
-        }, 2000);
+      // Note: If preferences are completely missing, this will now show ALL modules.
+      // Consider if a different behavior is desired (e.g., showing none, redirecting).
 
+      if (filteredModulesData.length === 0) {
+        // Handle case where no modules match preferences
+        setModules([]);
+        setLoading(false);
         return;
       }
 
-      setHasRoadmap(true);
+      const filteredModuleIds = filteredModulesData.map(m => m.id);
 
-      // Fetch all modules first (removed .order() as we sort client-side)
-      const { data: allModules, error: modulesError } = await supabase
-        .from('modules')
-        .select('*');
-
-      if (modulesError) throw modulesError;
-
-      // Fetch progress separately
+      // Fetch progress only for the filtered modules
       const { data: progressData, error: progressError } = await supabase
         .from('user_module_progress')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .in('module_id', filteredModuleIds); // Filter by relevant module IDs
 
       if (progressError) throw progressError;
 
-      // Create a map of module progress by module ID
-      const progressMap = new Map();
+      // Define the allowed status types
+      type ModuleStatus = "completed" | "in-progress" | "locked";
+      const validStatuses: Set<ModuleStatus> = new Set(["completed", "in-progress", "locked"]);
+
+      // Create a map of module progress by module ID with validated status
+      const progressMap = new Map<string, { progress: number; status: ModuleStatus }>();
       progressData?.forEach(progress => {
+        // Validate status, default to 'locked' if invalid or null
+        const validatedStatus = validStatuses.has(progress.status as ModuleStatus)
+          ? progress.status as ModuleStatus
+          : 'locked';
+
         progressMap.set(progress.module_id, {
           progress: progress.progress || 0,
-          status: progress.status || 'locked'
+          status: validatedStatus
         });
       });
 
-      // Combine modules with their progress
-      const formattedModules = allModules.map(module => {
-        const progress = progressMap.get(module.id) || { progress: 0, status: 'locked' };
+      // Combine filtered static modules with their progress
+      const formattedModules = filteredModulesData.map(moduleData => {
+        // Ensure default status is also correctly typed
+        const defaultProgress = { progress: 0, status: 'locked' as ModuleStatus };
+        const progress = progressMap.get(moduleData.id) || defaultProgress;
         return {
-          ...module,
+          ...moduleData,
           progress: progress.progress,
           status: progress.status
         };
@@ -117,17 +130,17 @@ export const useRoadmap = (userId: string) => {
       // Log the raw difficulty levels before sorting
       console.log("Raw Modules (before sort):", formattedModules.map(m => ({ title: m.title, difficulty: m.difficulty_level })));
 
-      // Define the desired order of difficulty levels
+      // Define the desired order of difficulty levels (using lowercase keys now)
       const difficultyOrder: { [key: string]: number } = {
-        'Beginner': 1,
-        'Intermediate': 2,
-        'Advanced': 3,
+        'beginner': 1,
+        'intermediate': 2,
+        'advanced': 3,
       };
 
       // Sort modules based on difficulty level (using a copy of the array)
       const sortedModules = [...formattedModules].sort((a, b) => {
-        const levelA = difficultyOrder[a.difficulty_level] || 99; // Assign a high number for unknown levels
-        const levelB = difficultyOrder[b.difficulty_level] || 99;
+        const levelA = difficultyOrder[a.difficulty_level.toLowerCase()] || 99; // Use lowercase and handle unknown levels
+        const levelB = difficultyOrder[b.difficulty_level.toLowerCase()] || 99;
         return levelA - levelB;
       });
 
