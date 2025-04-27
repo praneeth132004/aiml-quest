@@ -119,11 +119,11 @@ const Navbar = () => {
       {isMobile && (
         <div
           className={cn(
-            "fixed inset-0 top-16 bg-white z-40 transform transition-transform duration-300 ease-in-out",
+            "fixed inset-0 top-16 bg-background bg-opacity-100 z-40 transform transition-transform duration-300 ease-in-out", // Changed bg-white to bg-background and added bg-opacity-100
             isMenuOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
-          <div className="flex flex-col p-4">
+          <div className="flex flex-col p-4 bg-background bg-opacity-100"> {/* Added background classes here */}
             <MobileNavLink to="/roadmap" icon={<BarChart2 size={18} />} onClick={toggleMenu}>
               Roadmap
             </MobileNavLink>

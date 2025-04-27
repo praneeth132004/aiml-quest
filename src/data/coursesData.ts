@@ -51,12 +51,12 @@ export const courses: CourseCategory[] = [
       {
         title: "IBM Data Science Professional Certificate",
         url: "https://www.coursera.org/professional-certificates/ibm-data-science",
-        thumbnailUrl: "https://images.ctfassets.net/wp1lcwdav1p1/7kOP7XhGtGmHK1LFCRQAjn/a6765a11e69f9c70a51a0b8d359d38e1/IBM_Data_Science_Professional_Certificate_Coursera.png" // Example thumbnail
+        thumbnailUrl: "https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://images.ctfassets.net/00atxywtfxvd/rovLNZ0UzDoELzZX4BLU8/68dbc4369880dcd693c060474c3f1938/Data_Scientist-career-outcomes_2x.png?auto=format%2Ccompress&dpr=2&w=690&h=438&q=40&fit=fill"
       },
       {
         title: "Machine Learning by Stanford University",
         url: "https://www.coursera.org/learn/machine-learning",
-        thumbnailUrl: "https://images.ctfassets.net/wp1lcwdav1p1/3S50j5w0Qn6KdOBjP5Qo7T/a0b543f5b103603ae1b3a4a991b0405d/Coursera_-_Machine_Learning_by_Stanford_University.png" // Example thumbnail
+        thumbnailUrl: "https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera_assets.s3.amazonaws.com/images/a7c5400e51272c78b710ce9b56fd3178.png?auto=format%2Ccompress&dpr=2&w=562&h=221&q=40&fit=crop"
       }
     ]
   },

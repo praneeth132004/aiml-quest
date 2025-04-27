@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 // Removed PageLayout import as it's handled by routing now
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Removed CardFooter
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+// Removed Button import
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2 } from 'lucide-react';
+// Removed Loader2 import
 
 // Interface matching the profiles table structure (including new fields)
 interface ProfileData {
@@ -25,20 +25,10 @@ interface ProfileData {
 }
 
 const ProfilePage = () => {
-  const { user } = useAuth(); // Removed refreshUser
+  const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // State for editable fields
-  const [username, setUsername] = useState('');
-  const [fullName, setFullName] = useState('');
-  // Avatar URL editing might require file upload, handle later
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [bio, setBio] = useState('');
-  const [location, setLocation] = useState('');
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [learningGoals, setLearningGoals] = useState('');
+  // Removed isSaving and individual editing states
 
   const fetchProfile = useCallback(async () => {
     if (!user) {
@@ -59,19 +49,22 @@ const ProfilePage = () => {
       }
 
       if (data) {
-        setProfile(data as ProfileData | null); // Allow null type
-        // Initialize state with fetched data or defaults
-        setUsername(data.username || '');
-        setFullName(data.full_name || user.user_metadata?.full_name || ''); // Prioritize profiles table, fallback to metadata
-        // Initialize all profile fields
-        setPhoneNumber(data.phone_number || '');
-        setBio(data.bio || '');
-        setLocation(data.location || '');
-        setWebsiteUrl(data.website_url || '');
-        setLearningGoals(data.learning_goals || '');
+        setProfile(data as ProfileData | null);
+        // Removed setting of individual state variables
       } else {
-        // Initialize with metadata if no profile row exists yet
-         setFullName(user.user_metadata?.full_name || '');
+         // If no profile row, profile state remains null or default
+         // We might still want to show some metadata like email below
+         // Or potentially create a default profile object here if needed for display consistency
+         setProfile({ // Set a default structure if no profile exists
+            username: null,
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+            phone_number: null,
+            bio: null,
+            location: null,
+            website_url: null,
+            learning_goals: null,
+         });
       }
 
     } catch (error: any) {
@@ -88,68 +81,14 @@ const ProfilePage = () => {
 
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]); // Depend on the memoized fetchProfile
+  }, [fetchProfile]);
 
-  const handleSave = async () => {
-    if (!user) return;
-
-    setIsSaving(true);
-    try {
-      // 1. Update the 'profiles' table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          username: username || null, // Ensure null if empty
-          full_name: fullName || null,
-          phone_number: phoneNumber || null,
-          bio: bio || null,
-          location: location || null,
-          website_url: websiteUrl || null,
-          learning_goals: learningGoals || null,
-          updated_at: new Date().toISOString(), // Update timestamp
-        })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
-
-      // 2. Update user metadata (only fields stored there, like full_name)
-      // Note: Supabase might automatically sync full_name if using triggers,
-      // but explicit update ensures consistency. Avatar update needs separate logic.
-      const metadataUpdates: { full_name?: string } = {};
-      if (fullName !== user.user_metadata?.full_name) {
-        metadataUpdates.full_name = fullName;
-      }
-
-      if (Object.keys(metadataUpdates).length > 0) {
-         const { error: userError } = await supabase.auth.updateUser({
-           data: metadataUpdates
-         });
-         if (userError) throw userError;
-      }
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile information has been saved.",
-      });
-      await fetchProfile(); // Re-fetch profile data after successful save
-
-    } catch (error: any) {
-      console.error("Error saving profile:", error);
-      toast({
-        variant: "destructive",
-        title: "Error saving profile",
-        description: error.message,
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
+  // Removed handleSave function
 
   const getInitials = (name: string | undefined | null): string => {
     if (!name) return 'U';
-    // Use the state variable for consistency during editing
-    return fullName.split(' ').map((n) => n[0]).join('').toUpperCase() || 'U';
+    // Use profile state directly
+    return (profile?.full_name || '').split(' ').map((n) => n[0]).join('').toUpperCase() || 'U';
   };
 
   return (
@@ -159,7 +98,8 @@ const ProfilePage = () => {
       <Card>
           <CardHeader>
             <CardTitle>Profile Details</CardTitle>
-            <CardDescription>View and manage your profile information.</CardDescription>
+            {/* Updated CardDescription */}
+            <CardDescription>View your profile information. To edit, please go to the Settings page.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {isLoading ? (
@@ -183,72 +123,66 @@ const ProfilePage = () => {
               <>
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-16 w-16">
-                    {/* Display avatar from metadata, editing needs separate flow */}
-                    <AvatarImage src={user.user_metadata?.avatar_url} alt={fullName || 'User'} />
-                    <AvatarFallback>{getInitials(fullName)}</AvatarFallback>
+                    {/* Use profile state for avatar */}
+                    <AvatarImage src={profile?.avatar_url || user.user_metadata?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
+                    {/* Use profile state for fallback */}
+                    <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
                   </Avatar>
-                  {/* Add Avatar Upload Button Here (Future) */}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="space-y-2">
                      <Label htmlFor="fullName">Full Name</Label>
-                     <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                     {/* Use profile state, remove onChange, add disabled */}
+                     <Input id="fullName" value={profile?.full_name || ''} disabled />
                    </div>
                    <div className="space-y-2">
                      <Label htmlFor="username">Username</Label>
-                     <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g., codingwizard" />
+                     {/* Use profile state, remove onChange, add disabled */}
+                     <Input id="username" value={profile?.username || ''} placeholder="N/A" disabled />
                    </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" value={user.email} disabled /> {/* Email usually not editable */}
+                  <Input id="email" value={user.email || ''} disabled /> {/* Email usually not editable */}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
-                  <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Your phone number" />
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  {/* Use profile state, remove onChange, add disabled */}
+                  <Input id="phoneNumber" type="tel" value={profile?.phone_number || ''} placeholder="N/A" disabled />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
-                  <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell us a little about yourself" />
+                  {/* Use profile state, remove onChange, add disabled */}
+                  <Textarea id="bio" value={profile?.bio || ''} placeholder="N/A" disabled />
                 </div>
 
                  <div className="space-y-2">
                    <Label htmlFor="location">Location</Label>
-                   <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., San Francisco, CA" />
+                   {/* Use profile state, remove onChange, add disabled */}
+                   <Input id="location" value={profile?.location || ''} placeholder="N/A" disabled />
                  </div>
 
                  <div className="space-y-2">
                    <Label htmlFor="websiteUrl">Website URL</Label>
-                   <Input id="websiteUrl" type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://yourwebsite.com" />
+                   {/* Use profile state, remove onChange, add disabled */}
+                   <Input id="websiteUrl" type="url" value={profile?.website_url || ''} placeholder="N/A" disabled />
                  </div>
 
                  <div className="space-y-2">
                    <Label htmlFor="learningGoals">Learning Goals</Label>
-                   <Textarea id="learningGoals" value={learningGoals} onChange={(e) => setLearningGoals(e.target.value)} placeholder="What are you hoping to learn?" />
+                   {/* Use profile state, remove onChange, add disabled */}
+                   <Textarea id="learningGoals" value={profile?.learning_goals || ''} placeholder="N/A" disabled />
                  </div>
               </>
             ) : (
               <p>Please log in to view your profile.</p>
             )}
           </CardContent>
-          {!isLoading && user && (
-            <CardFooter className="border-t pt-6">
-               <Button onClick={handleSave} disabled={isSaving}>
-                 {isSaving ? (
-                   <>
-                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                     Saving...
-                   </>
-                 ) : (
-                   "Save Profile"
-                 )}
-               </Button>
-            </CardFooter>
-          )}
+          {/* Removed CardFooter with Save button */}
         </Card>
     </div>
     // Removed closing PageLayout tag
