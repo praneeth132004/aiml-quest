@@ -14,6 +14,7 @@ import CommunityPage from "./pages/CommunityPage";
 import CreatePostPage from "./pages/CreatePostPage";
 import PostPage from "./pages/PostPage";
 import ProfilePage from "./pages/ProfilePage"; // Import ProfilePage
+import SettingsPage from "./pages/SettingsPage"; // Import SettingsPage
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/community/create-post" element={<PageLayout requireAuth={true}><CreatePostPage /></PageLayout>} />
             <Route path="/community/posts/:id" element={<PageLayout requireAuth={true}><PostPage /></PageLayout>} />
             <Route path="/profile" element={<PageLayout requireAuth={true}><ProfilePage /></PageLayout>} />
+            <Route path="/settings" element={<PageLayout requireAuth={true}><SettingsPage /></PageLayout>} /> {/* Add Settings Route */}
             <Route path="/architecture" element={<PageLayout><ClassDiagramPage /></PageLayout>} />
 
             {/* Catch-all */}
