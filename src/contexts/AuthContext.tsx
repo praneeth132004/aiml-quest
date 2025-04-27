@@ -1,22 +1,37 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react"; // Added useCallback
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Tables } from "@/integrations/supabase/types"; // Import Tables type
+import { Tables } from "@/integrations/supabase/types";
 
-type Profile = Tables<'profiles'>; // Define Profile type alias
+type Profile = Tables<'profiles'>;
+// Use the actual type for user_roadmaps row
+type UserRoadmap = Tables<'user_roadmaps'>;
+
+// Updated interface based on user_roadmaps table
+interface RoadmapData {
+  roadmapId: string;
+  modules: string[]; // Assuming this holds completed modules or all modules in the roadmap
+  preferences: UserRoadmap['preferences']; // Keep preferences if needed
+  // Add other relevant fields from user_roadmaps if necessary
+}
+
+// Removed CourseProgress interface
 
 type AuthContextType = {
   user: User | null;
   session: Session | null;
-  profile: Profile | null; // Add profile state
-  isLoading: boolean; // Overall auth loading state
-  isProfileLoading: boolean; // Specific profile loading state
+  profile: Profile | null;
+  roadmapData: RoadmapData | null; // Renamed from roadmapProgress
+  // Removed courseProgress
+  isLoading: boolean; // Initial auth check loading
+  isExtendedDataLoading: boolean; // Loading for profile, roadmap, etc.
   signUp: (email: string, password: string, fullName: string, username: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshUserData: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,193 +39,201 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null); // Add profile state
-  const [isLoading, setIsLoading] = useState(true); // For initial session check
-  const [isProfileLoading, setIsProfileLoading] = useState(false); // For profile fetch
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [roadmapData, setRoadmapData] = useState<RoadmapData | null>(null); // Renamed state
+  // Removed courseProgress state
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExtendedDataLoading, setIsExtendedDataLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Function to create a profile
-  const createProfile = useCallback(async (user: User) => {
+  const createProfile = useCallback(async (user: User): Promise<Profile | null> => {
+    if (!user || !user.id) {
+        console.error("createProfile called with invalid user object");
+        return null;
+    }
     try {
-      console.log('Creating profile for user:', user.id);
-
-      // First check if profile already exists
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('id', user.id);
-
-      if (count && count > 0) {
-        console.log('Profile already exists, fetching it instead of creating');
-      } else {
-        // Create the profile if it doesn't exist
-        const { error } = await supabase.from('profiles').insert({
-          id: user.id,
-          username: user.user_metadata?.username || null,
-          full_name: user.user_metadata?.full_name || null,
-          avatar_url: null,
-        });
-
-        if (error) {
-          // If error is not a duplicate key error, throw it
-          if (!error.message.includes('duplicate key value')) {
-            throw error;
-          } else {
-            console.log('Profile already exists (duplicate key), continuing to fetch');
-          }
-        }
-      }
-
-      // Fetch the profile (whether newly created or existing)
-      const { data, error: fetchError } = await supabase
+      console.log('Checking/Creating profile for user:', user.id);
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (fetchError) throw fetchError;
-      if (data) {
-        console.log('Successfully fetched profile:', data);
-        setProfile(data);
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingProfile) {
+        console.log('Profile already exists.');
+        return existingProfile;
+      } else {
+        console.log('Profile does not exist, creating...');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            username: user.user_metadata?.username || null,
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        console.log('Profile created successfully.');
+        return newProfile;
       }
     } catch (error: any) {
       console.error('Error creating/fetching profile:', error.message);
-      // Only show toast for non-duplicate key errors
-      if (!error.message.includes('duplicate key value')) {
-        toast({
-          variant: "destructive",
-          title: "Error with profile",
-          description: error.message,
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Error initializing profile",
+        description: error.message,
+      });
+      return null;
     }
   }, [toast]);
 
-  // Function to fetch profile
-  const fetchProfile = useCallback(async (userId: string) => {
-    setIsProfileLoading(true); // Start loading profile
+  const fetchExtendedUserData = useCallback(async (currentUser: User) => {
+    if (!currentUser || !currentUser.id) {
+        console.log("fetchExtendedUserData skipped: invalid user object provided.");
+        return;
+    }
+    const userId = currentUser.id;
+    setIsExtendedDataLoading(true);
+    console.log('Fetching extended user data for:', userId);
     try {
-      console.log('Fetching profile for user ID:', userId);
+      // Fetch profile and roadmap data concurrently
+      const [profileResult, roadmapResult] = await Promise.allSettled([
+        // 1. Profile Fetch
+        createProfile(currentUser),
 
-      // First, check if the profile exists using a count query
-      const { count, error: countError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('id', userId);
+        // 2. Roadmap Data Fetch (from user_roadmaps table)
+        supabase
+          .from('user_roadmaps') // Use the correct table name
+          .select('id, modules, preferences') // Select relevant columns
+          .eq('user_id', userId)
+          .maybeSingle(), // Assuming one roadmap per user for now
 
-      console.log('Profile count check:', { count, error: countError });
+        // 3. Removed Course Progress Fetch
+      ]);
 
-      // If profile exists, fetch it
-      if (count && count > 0) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-
-        console.log('Profile fetch response:', { data, error });
-
-        if (error) throw error;
-        if (data) {
-          setProfile(data);
-          return;
-        }
-      } else {
-        // Profile doesn't exist, create one
-        console.log('No profile found, creating one');
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user) {
-          await createProfile(userData.user);
-          return;
-        }
+      // Process Profile Result
+      if (profileResult.status === 'fulfilled' && profileResult.value) {
+        setProfile(profileResult.value);
+        console.log('Profile data loaded:', profileResult.value);
+      } else if (profileResult.status === 'rejected') {
+        console.error('Failed to fetch/create profile:', profileResult.reason);
+        setProfile(null);
+        toast({ variant: "destructive", title: "Error loading profile data" });
       }
 
-      // If we get here, something went wrong
-      setProfile(null);
-    } catch (error: any) {
-      console.error('Error fetching profile:', error.message);
-      setProfile(null); // Reset profile on error
-    } finally {
-      setIsProfileLoading(false); // Stop loading profile
-    }
-  }, [createProfile]);
+      // Process Roadmap Result
+      if (roadmapResult.status === 'fulfilled' && roadmapResult.value?.data) {
+        const dbRoadmap = roadmapResult.value.data;
+        const mappedRoadmapData: RoadmapData = {
+          roadmapId: dbRoadmap.id,
+          modules: dbRoadmap.modules || [], // Handle null case for modules array
+          preferences: dbRoadmap.preferences,
+        };
+        setRoadmapData(mappedRoadmapData);
+        console.log('Roadmap data loaded:', mappedRoadmapData);
+      } else {
+         if (roadmapResult.status === 'rejected') {
+            console.error('Failed to fetch roadmap data:', roadmapResult.reason);
+            // Check for RLS issues specifically
+             if (roadmapResult.reason?.message?.includes('security policy')) {
+                 toast({ variant: "destructive", title: "Roadmap Access Denied", description: "Check Row Level Security policies for user_roadmaps." });
+             }
+         } else {
+             console.log('No roadmap data found for user.'); // Handle case where maybeSingle returns null
+         }
+        setRoadmapData(null); // Set to null or default state
+      }
 
+      // Removed Course Result Processing
+
+    } catch (error: any) {
+      console.error('Error fetching extended user data:', error.message);
+      toast({
+        variant: "destructive",
+        title: "Error loading user data",
+        description: error.message,
+      });
+      setProfile(null);
+      setRoadmapData(null); // Reset roadmap data on error
+      // Removed courseProgress reset
+    } finally {
+      setIsExtendedDataLoading(false);
+      console.log('Finished fetching extended user data.');
+    }
+  }, [createProfile, toast]);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let isMounted = true;
+
+    const handleSession = async (session: Session | null) => {
+      if (!isMounted) return;
+
+      const currentUser = session?.user ?? null;
+      setSession(session);
+      setUser(currentUser);
+
+      if (currentUser) {
+        console.log('User detected, fetching extended data...');
+        await fetchExtendedUserData(currentUser);
+      } else {
+        console.log('No user detected, clearing extended data...');
+        setProfile(null);
+        setRoadmapData(null); // Clear roadmap data
+        // Removed courseProgress clear
+        setIsExtendedDataLoading(false);
+      }
+      setIsLoading(false);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check completed.');
+      handleSession(session);
+    }).catch(error => {
+       console.error("Error getting initial session:", error);
+       if (isMounted) setIsLoading(false);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event);
-        const currentUser = session?.user ?? null;
-        setSession(session);
-        setUser(currentUser);
-
-        if (currentUser) {
-          try {
-            // Try to fetch profile, with retry mechanism
-            let retryCount = 0;
-            const maxRetries = 3;
-            let profileFetched = false;
-
-            while (!profileFetched && retryCount < maxRetries) {
-              try {
-                await fetchProfile(currentUser.id);
-                profileFetched = true;
-              } catch (err) {
-                console.error(`Profile fetch attempt ${retryCount + 1} failed:`, err);
-                retryCount++;
-                // Wait a bit before retrying
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-            }
-
-            if (!profileFetched) {
-              console.error('Failed to fetch profile after multiple attempts');
-            }
-          } catch (error) {
-            console.error('Error in auth state change handler:', error);
-          }
-        } else {
-          setProfile(null); // Clear profile on sign out
-        }
+        handleSession(session);
 
         if (event === 'SIGNED_IN') {
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in.",
-          });
+          toast({ title: "Welcome back!", description: "You have successfully signed in." });
         } else if (event === 'SIGNED_OUT') {
-          console.log('Auth state change: SIGNED_OUT event detected');
-          // Clear user data on sign out
-          setUser(null);
-          setSession(null);
-          setProfile(null);
-
-          toast({
-            title: "Signed out",
-            description: "You have been signed out.",
-          });
+          toast({ title: "Signed out", description: "You have been signed out." });
+          if (isMounted) {
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setRoadmapData(null); // Clear roadmap data
+            // Removed courseProgress clear
+          }
         }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          await fetchProfile(currentUser.id); // Fetch profile on initial load
-        } catch (error) {
-          console.error('Error fetching profile on initial load:', error);
-        }
-      }
-      setIsLoading(false);
-    });
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      console.log('Auth subscription unsubscribed.');
+    };
+  }, [fetchExtendedUserData, toast]);
 
-    return () => subscription.unsubscribe();
-  }, [navigate, fetchProfile, toast]); // Add fetchProfile and toast to dependency array
+  const refreshUserData = useCallback(async () => {
+    if (user) {
+      await fetchExtendedUserData(user);
+    } else {
+      console.log("Cannot refresh user data: No user logged in.");
+    }
+  }, [user, fetchExtendedUserData]);
 
   const signUp = async (email: string, password: string, fullName: string, username: string) => {
     setIsLoading(true);
@@ -225,21 +248,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
         },
       });
-
       if (error) throw error;
-
-      toast({
-        title: "Account created",
-        description: "Please check your email to confirm your account.",
-      });
-
-      navigate("/");
+      toast({ title: "Account created", description: "Please check your email to confirm your account." });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error signing up",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Error signing up", description: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -248,19 +260,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      navigate("/");
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error signing in",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Error signing in", description: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -270,80 +273,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Signing out user...');
       const { error } = await supabase.auth.signOut();
-
       if (error) throw error;
 
-      // Manually clear the user state
       setUser(null);
       setSession(null);
       setProfile(null);
-
-      // Clear any storage items that might be persisting the session
-      const clearBrowserStorage = () => {
-        // Clear specific Supabase items
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('sb-bjlqyztfzvlhpumrpsgh-auth-token');
-
-        // Clear session storage items
-        sessionStorage.removeItem('supabase.auth.token');
-        sessionStorage.removeItem('sb-bjlqyztfzvlhpumrpsgh-auth-token');
-
-        // Find and remove any other Supabase-related items
-        Object.keys(localStorage).forEach(key => {
-          if (key.includes('supabase') || key.includes('sb-')) {
-            console.log('Removing localStorage item:', key);
-            localStorage.removeItem(key);
-          }
-        });
-
-        Object.keys(sessionStorage).forEach(key => {
-          if (key.includes('supabase') || key.includes('sb-')) {
-            console.log('Removing sessionStorage item:', key);
-            sessionStorage.removeItem(key);
-          }
-        });
-      };
-
-      clearBrowserStorage();
+      setRoadmapData(null); // Clear roadmap data
+      // Removed courseProgress clear
 
       console.log('User signed out successfully');
-
-      // Navigate to auth page and force a page reload to clear any remaining state
       navigate("/auth");
-
-      // Add a small delay before reloading to ensure navigation completes
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
     } catch (error: any) {
       console.error('Error signing out:', error);
-      toast({
-        variant: "destructive",
-        title: "Error signing out",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Error signing out", description: error.message });
     }
   };
 
   const resetPassword = async (email: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + '/auth/reset-password',
       });
-
       if (error) throw error;
-
-      toast({
-        title: "Password reset email sent",
-        description: "Check your email for a password reset link.",
-      });
+      toast({ title: "Password reset email sent", description: "Check your email for a password reset link." });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error resetting password",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Error resetting password", description: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -354,13 +309,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         session,
-        profile, // Add profile to context value
+        profile,
+        roadmapData, // Use renamed value
+        // Removed courseProgress
         isLoading,
-        isProfileLoading, // Add isProfileLoading to context value
+        isExtendedDataLoading,
         signUp,
         signIn,
         signOut,
         resetPassword,
+        refreshUserData,
       }}
     >
       {children}

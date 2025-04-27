@@ -12,78 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 // Removed Loader2 import
 
-// Interface matching the profiles table structure (including new fields)
-interface ProfileData {
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-  phone_number: string | null;
-  bio: string | null;
-  location: string | null;
-  website_url: string | null;
-  learning_goals: string | null;
-}
+// Removed local ProfileData interface - type comes from AuthContext
 
 const ProfilePage = () => {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  // Removed isSaving and individual editing states
-
-  const fetchProfile = useCallback(async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, full_name, avatar_url, phone_number, bio, location, website_url, learning_goals') // Select all profile fields
-        .eq('id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // Ignore 'No rows found' error
-        throw error;
-      }
-
-      if (data) {
-        setProfile(data as ProfileData | null);
-        // Removed setting of individual state variables
-      } else {
-         // If no profile row, profile state remains null or default
-         // We might still want to show some metadata like email below
-         // Or potentially create a default profile object here if needed for display consistency
-         setProfile({ // Set a default structure if no profile exists
-            username: null,
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-            phone_number: null,
-            bio: null,
-            location: null,
-            website_url: null,
-            learning_goals: null,
-         });
-      }
-
-    } catch (error: any) {
-      console.error("Error fetching profile:", error);
-      toast({
-        variant: "destructive",
-        title: "Error loading profile",
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  // Removed handleSave function
+  // Get user, profile, and loading states from AuthContext
+  const { user, profile, isLoading: isAuthLoading, isExtendedDataLoading } = useAuth();
+  // Removed local profile state, isLoading state, and fetchProfile function/useEffect
 
   const getInitials = (name: string | undefined | null): string => {
     if (!name) return 'U';
@@ -102,7 +36,8 @@ const ProfilePage = () => {
             <CardDescription>View your profile information. To edit, please go to the Settings page.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {isLoading ? (
+            {/* Use combined loading state from context */}
+            {(isAuthLoading || isExtendedDataLoading) ? (
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
                   <Skeleton className="h-16 w-16 rounded-full" />
