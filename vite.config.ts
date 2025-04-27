@@ -27,6 +27,25 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // Group major vendor libraries into a vendor chunk
+            if (id.includes('react') || id.includes('react-dom') || id.includes('lucide-react')) {
+              return 'vendor';
+            }
+            // You could add more specific chunking rules here if needed
+            // For example, chunking large UI libraries separately
+            // if (id.includes('@radix-ui')) {
+            //   return 'radix-ui';
+            // }
+          }
+        },
+      },
+    },
+  },
   // Add this line to explicitly enable source maps
-  sourcemap: true,
+  sourcemap: true, // Keep sourcemap enabled if needed, or set to false for production builds to reduce size slightly
 }));
