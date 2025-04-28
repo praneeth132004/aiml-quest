@@ -15,6 +15,7 @@ import CreatePostPage from "./pages/CreatePostPage";
 import PostPage from "./pages/PostPage";
 import ProfilePage from "./pages/ProfilePage"; // Import ProfilePage
 import SettingsPage from "./pages/SettingsPage"; // Import SettingsPage
+import DashboardPage from "./pages/DashboardPage"; // Import DashboardPage
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -38,6 +39,7 @@ const App = () => (
 
             {/* Routes with Navbar/Footer */}
             <Route path="/" element={<PageLayout><Index /></PageLayout>} />
+            <Route path="/dashboard" element={<PageLayout requireAuth={true}><DashboardPage /></PageLayout>} /> {/* Add Dashboard Route */}
             <Route path="/roadmap" element={<PageLayout requireAuth={true}><RoadmapPage /></PageLayout>} />
             <Route path="/quizzes" element={<PageLayout requireAuth={true}><QuizzesPage /></PageLayout>} />
             <Route path="/courses" element={<PageLayout requireAuth={true}><CoursesPage /></PageLayout>} /> {/* Add Courses Route */}
