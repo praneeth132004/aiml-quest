@@ -8,9 +8,10 @@ import { useNavigate } from 'react-router-dom';
 interface PageLayoutProps {
   children: React.ReactNode;
   requireAuth?: boolean;
+  hideFooter?: boolean; // Add hideFooter prop
 }
 
-const PageLayout: React.FC<PageLayoutProps> = ({ children, requireAuth = false }) => {
+const PageLayout: React.FC<PageLayoutProps> = ({ children, requireAuth = false, hideFooter = false }) => { // Destructure hideFooter
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -28,7 +29,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, requireAuth = false }
       <main className="flex-grow">
         {children}
       </main>
-      <Footer />
+      {!hideFooter && <Footer />} {/* Conditionally render Footer */}
     </div>
   );
 };

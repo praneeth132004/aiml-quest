@@ -20,7 +20,9 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ClassDiagramPage from "./pages/ClassDiagramPage";
+import ChatbotPage from './pages/ChatbotPage'; // Import ChatbotPage
 import PageLayout from "./components/layout/PageLayout"; // Import PageLayout
+// Removed non-existent ProtectedRoute import
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,8 @@ const App = () => (
             <Route path="/community/posts/:id" element={<PageLayout requireAuth={true}><PostPage /></PageLayout>} />
             <Route path="/profile" element={<PageLayout requireAuth={true}><ProfilePage /></PageLayout>} />
             <Route path="/settings" element={<PageLayout requireAuth={true}><SettingsPage /></PageLayout>} /> {/* Add Settings Route */}
+            {/* Pass hideFooter={true} to PageLayout for the chatbot route */}
+            <Route path="/chatbot" element={<PageLayout requireAuth={true} hideFooter={true}><ChatbotPage /></PageLayout>} />
             <Route path="/architecture" element={<PageLayout><ClassDiagramPage /></PageLayout>} />
 
             {/* Catch-all */}

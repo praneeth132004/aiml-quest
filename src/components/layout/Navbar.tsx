@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, BookOpen, User, BarChart2, Users, Search, LogOut } from 'lucide-react';
+import { Menu, X, BookOpen, User, BarChart2, Users, Search, LogOut, MessageSquare } from 'lucide-react'; // Added MessageSquare
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import {
@@ -59,6 +59,7 @@ const Navbar = () => {
               <NavLink to="/courses">Courses</NavLink>
               <NavLink to="/quizzes">Quizzes</NavLink>
               <NavLink to="/community">Community</NavLink>
+              <NavLink to="/chatbot">Chatbot</NavLink> {/* Added Chatbot Link */}
             </div>
 
             <div className="flex items-center space-x-2">
@@ -135,6 +136,9 @@ const Navbar = () => {
             </MobileNavLink>
             <MobileNavLink to="/community" icon={<Users size={18} />} onClick={toggleMenu}>
               Community
+            </MobileNavLink>
+            <MobileNavLink to="/chatbot" icon={<MessageSquare size={18} />} onClick={toggleMenu}> {/* Added Chatbot Mobile Link */}
+              Chatbot
             </MobileNavLink>
             <div className="mt-4">
               {user ? (
