@@ -214,7 +214,7 @@ const ChatbotPage: React.FC = () => {
       </header>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 mb-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages
           .filter((msg) => msg.role !== "system")
           .map((message, index) => (
@@ -273,11 +273,13 @@ const ChatbotPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* User Avatar Placeholder */}
+              {/* User Avatar */}
               {message.role === "user" && (
-                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gray-300 mt-1 border border-gray-400">
-                  {/* User icon can go here */}
-                </div>
+                <img
+                  src="https://m.media-amazon.com/images/I/71MlSzdHRtL._AC_UF350,350_QL80_.jpg"
+                  alt="User Avatar"
+                  className="flex-shrink-0 w-9 h-9 rounded-full mt-1 border border-gray-400 object-cover"
+                />
               )}
             </div>
           ))}

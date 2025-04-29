@@ -9,11 +9,22 @@ type Profile = Tables<'profiles'>;
 // Use the actual type for user_roadmaps row
 type UserRoadmap = Tables<'user_roadmaps'>;
 
+// Define a more specific type for the preferences JSON object
+interface RoadmapPreferences {
+  learningStyle?: string[];
+  goals?: string[];
+  interests?: string[];
+  experienceLevel?: string;
+  timeCommitment?: string;
+  completedModules?: string[]; // Explicitly define completedModules
+  // Add other potential preference fields if known
+}
+
 // Updated interface based on user_roadmaps table
 interface RoadmapData {
   roadmapId: string;
-  modules: string[]; // Assuming this holds completed modules or all modules in the roadmap
-  preferences: UserRoadmap['preferences']; // Keep preferences if needed
+  modules: string[]; // Assuming this holds all modules in the roadmap
+  preferences: RoadmapPreferences | null; // Use the specific type, allow null
   // Add other relevant fields from user_roadmaps if necessary
 }
 
@@ -102,9 +113,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userId = currentUser.id;
     setIsExtendedDataLoading(true);
     console.log('Fetching extended user data for:', userId);
+    // Declare variables outside the try block using Supabase types
+    let profileResult: PromiseSettledResult<Profile | null> | undefined;
+    // Use PostgrestSingleResponse with the selected fields for roadmapResult type
+    let roadmapResult: PromiseSettledResult<import('@supabase/supabase-js').PostgrestSingleResponse<{ id: string; modules: string[]; preferences: any; }>> | undefined;
+
+
     try {
       // Fetch profile and roadmap data concurrently
-      const [profileResult, roadmapResult] = await Promise.allSettled([
+      [profileResult, roadmapResult] = await Promise.allSettled([ // Assign to variables
         // 1. Profile Fetch
         createProfile(currentUser),
 
@@ -131,10 +148,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Process Roadmap Result
       if (roadmapResult.status === 'fulfilled' && roadmapResult.value?.data) {
         const dbRoadmap = roadmapResult.value.data;
+        // Ensure preferences are correctly typed when setting state
         const mappedRoadmapData: RoadmapData = {
           roadmapId: dbRoadmap.id,
           modules: dbRoadmap.modules || [], // Handle null case for modules array
-          preferences: dbRoadmap.preferences,
+          // Cast preferences to the specific type, handle potential null/undefined
+          preferences: (dbRoadmap.preferences as RoadmapPreferences | null | undefined) ?? null,
         };
         setRoadmapData(mappedRoadmapData);
         console.log('Roadmap data loaded:', mappedRoadmapData);
@@ -166,22 +185,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsExtendedDataLoading(false);
       console.log('Finished fetching extended user data.');
+      // Return the fetched data for the caller to use, handle potential undefined results
+      return {
+        profile: profileResult?.status === 'fulfilled' ? profileResult.value : null,
+        // Access data correctly from PostgrestSingleResponse within the fulfilled result
+        roadmap: roadmapResult?.status === 'fulfilled' ? roadmapResult.value.data : null
+      };
     }
   }, [createProfile, toast]);
 
   useEffect(() => {
     let isMounted = true;
 
-    const handleSession = async (session: Session | null) => {
+    const handleSession = async (session: Session | null, event?: string) => {
       if (!isMounted) return;
 
       const currentUser = session?.user ?? null;
       setSession(session);
       setUser(currentUser);
 
+      let fetchedData: { profile: Profile | null; roadmap: any } | undefined; // Define type for fetched data
+
       if (currentUser) {
         console.log('User detected, fetching extended data...');
-        await fetchExtendedUserData(currentUser);
+        fetchedData = await fetchExtendedUserData(currentUser); // Capture the returned data
       } else {
         console.log('No user detected, clearing extended data...');
         setProfile(null);
@@ -189,12 +216,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Removed courseProgress clear
         setIsExtendedDataLoading(false);
       }
-      setIsLoading(false);
+      setIsLoading(false); // Set loading false after initial check or data fetch attempt
+
+      // --- Post-Login Navigation Logic ---
+      if (event === 'SIGNED_IN' && currentUser && fetchedData) {
+        console.log('Handling SIGNED_IN navigation. Roadmap data:', fetchedData.roadmap);
+        if (!fetchedData.roadmap) { // Check if roadmap data is missing (implies onboarding needed)
+          console.log('No roadmap data found, navigating to /onboarding');
+          navigate('/onboarding');
+        } else {
+          console.log('Roadmap data found, navigating to /dashboard');
+          navigate('/dashboard'); // Navigate to dashboard if onboarding seems complete
+        }
+      }
+      // --- End Post-Login Navigation Logic ---
     };
+
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check completed.');
-      handleSession(session);
+      handleSession(session); // Pass undefined for event initially
     }).catch(error => {
        console.error("Error getting initial session:", error);
        if (isMounted) setIsLoading(false);
@@ -203,8 +244,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event);
-        handleSession(session);
+        handleSession(session, event); // Pass the event type
 
+        // Keep toasts separate from navigation logic
         if (event === 'SIGNED_IN') {
           toast({ title: "Welcome back!", description: "You have successfully signed in." });
         } else if (event === 'SIGNED_OUT') {
@@ -216,6 +258,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setRoadmapData(null); // Clear roadmap data
             // Removed courseProgress clear
           }
+          // Navigate to auth page on explicit sign out
+          navigate('/auth');
         }
       }
     );
@@ -282,7 +326,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Removed courseProgress clear
 
       console.log('User signed out successfully');
-      navigate("/auth");
+      // Navigation is now handled in onAuthStateChange for SIGNED_OUT
     } catch (error: any) {
       console.error('Error signing out:', error);
       toast({ variant: "destructive", title: "Error signing out", description: error.message });

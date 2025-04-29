@@ -1,3 +1,4 @@
+import React, { lazy, Suspense } from 'react'; // Import lazy and Suspense
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,10 +20,13 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ClassDiagramPage from "./pages/ClassDiagramPage";
-import ChatbotPage from './pages/ChatbotPage'; // Import ChatbotPage
+// import ChatbotPage from './pages/ChatbotPage'; // Remove static import
 import PageLayout from "./components/layout/PageLayout"; // Import PageLayout
 import Navbar from "./components/layout/Navbar"; // Import Navbar
 // Removed non-existent ProtectedRoute import
+
+// Dynamically import ChatbotPage
+const LazyChatbotPage = lazy(() => import('./pages/ChatbotPage'));
 
 const queryClient = new QueryClient();
 
@@ -50,12 +54,14 @@ const App = () => (
             <Route path="/community/posts/:id" element={<PageLayout requireAuth={true}><PostPage /></PageLayout>} />
             <Route path="/profile" element={<PageLayout requireAuth={true}><ProfilePage /></PageLayout>} />
             <Route path="/settings" element={<PageLayout requireAuth={true}><SettingsPage /></PageLayout>} /> {/* Add Settings Route */}
-            {/* Chatbot Route with custom layout */}
+            {/* Chatbot Route with custom layout and dynamic import */}
             <Route path="/chatbot" element={
-              <div className="flex flex-col">
+              <div className="flex flex-col h-screen">
                 <Navbar />
-                <main className="flex-1">
-                  <ChatbotPage />
+                <main className="flex-1 overflow-hidden">
+                  <Suspense fallback={<div className="flex justify-center items-center h-full">Loading Chatbot...</div>}>
+                    <LazyChatbotPage />
+                  </Suspense>
                 </main>
               </div>
             } />

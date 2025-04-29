@@ -32,7 +32,11 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // Group major vendor libraries into a vendor chunk
+            // Separate syntax highlighter and its large dependencies
+            if (id.includes('react-syntax-highlighter') || id.includes('refractor')) {
+              return 'syntax-highlighter';
+            }
+            // Group core vendor libraries
             if (id.includes('react') || id.includes('react-dom') || id.includes('lucide-react')) {
               return 'vendor';
             }

@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { ClockIcon, BookOpenIcon, CheckCircleIcon, Loader2 } from 'lucide-react';
+import { allRoadmapModules } from '@/data/roadmapModules'; // Import module data
 
 // We'll get quiz data from the backend later
 interface Quiz {
@@ -24,6 +25,15 @@ const mockRecentQuizzes: Quiz[] = [
 
 const DashboardPage: React.FC = () => {
   const { user, profile, roadmapData, isLoading, isExtendedDataLoading } = useAuth();
+
+  // Create a lookup map for module titles
+  const moduleTitleMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    allRoadmapModules.forEach(module => {
+      map.set(module.id, module.title);
+    });
+    return map;
+  }, []);
 
   // Handle main loading state
   if (isLoading || isExtendedDataLoading) {
@@ -64,7 +74,8 @@ const DashboardPage: React.FC = () => {
     .slice(0, 2)
     .map(moduleId => ({
       id: moduleId,
-      title: `Module ${moduleId}`, // You might want to fetch actual module titles from somewhere
+      // Use the lookup map to get the title, fallback to ID if not found
+      title: moduleTitleMap.get(moduleId) || `Module ${moduleId}`,
       type: 'module'
     }));
 

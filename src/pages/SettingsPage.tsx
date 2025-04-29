@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react'; // Added useState for potential form handling later
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,25 +8,32 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 
 const SettingsPage = () => {
-  // Placeholder data/functions - replace with actual state and handlers
-  const user = {
-    fullName: 'Current User Name',
-    email: 'user@example.com',
-    avatarUrl: '', // Add a placeholder image URL if desired
-    bio: 'This is the current user bio.',
-    preferences: {
-      topics: ['Machine Learning', 'Data Science'],
-      goals: 'Become proficient in Python for AI.',
-    },
-    notifications: {
+  // Use AuthContext to get user data and loading states
+  const { user, profile, isLoading: isAuthLoading, isExtendedDataLoading } = useAuth();
+  const isLoading = isAuthLoading || isExtendedDataLoading; // Combined loading state
+
+  // TODO: Add state and handlers for form inputs (e.g., useState for newEmail, newPassword etc.)
+
+  const getInitials = (name: string | undefined | null): string => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+  };
+
+  // Placeholder notification settings - fetch/update these via context or API later
+  const notifications = {
       courseUpdates: true,
       communityActivity: false,
       platformAnnouncements: true,
-    }
   };
-  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
+  // Placeholder preferences - fetch/update these via context or API later
+  const preferences = {
+      topics: ['Machine Learning', 'Data Science'],
+      goals: 'Become proficient in Python for AI.',
+  };
+
 
   return (
     <div className="container mx-auto py-8">
@@ -45,40 +53,83 @@ const SettingsPage = () => {
               <CardDescription>Manage your account details and security settings.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Profile Section */}
-              <div className="space-y-2 border-b pb-4">
-                <h3 className="text-lg font-medium">Profile</h3>
-                 <div className="flex items-center space-x-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage src={user.avatarUrl} alt={user.fullName} />
-                      <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
-                    </Avatar>
-                    <Button variant="outline" size="sm">Change Avatar</Button>
-                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input id="fullName" defaultValue={user.fullName} />
+              {isLoading ? (
+                // Skeleton Loader for Account Tab
+                <div className="space-y-6">
+                  <div className="space-y-2 border-b pb-4">
+                    <Skeleton className="h-6 w-1/4 mb-2" />
+                    <div className="flex items-center space-x-4">
+                      <Skeleton className="h-16 w-16 rounded-full" />
+                      <Skeleton className="h-9 w-28" />
+                    </div>
+                    <Skeleton className="h-4 w-1/5 mt-4" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-4 w-1/6 mt-2" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-9 w-24 mt-2" />
+                  </div>
+                  <div className="space-y-2 border-b pb-4">
+                    <Skeleton className="h-6 w-1/4 mb-2" />
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/5 mt-4" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-4 w-1/5 mt-2" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-9 w-28 mt-2" />
+                  </div>
+                  <div className="space-y-2 border-b pb-4">
+                     <Skeleton className="h-6 w-1/4 mb-2" />
+                     <Skeleton className="h-4 w-1/5 mt-4" />
+                     <Skeleton className="h-10 w-full" />
+                     <Skeleton className="h-4 w-1/5 mt-2" />
+                     <Skeleton className="h-10 w-full" />
+                     <Skeleton className="h-4 w-1/5 mt-2" />
+                     <Skeleton className="h-10 w-full" />
+                     <Skeleton className="h-9 w-32 mt-2" />
+                  </div>
+                   <div className="space-y-2">
+                     <Skeleton className="h-6 w-1/4 mb-2 text-destructive" />
+                     <Skeleton className="h-4 w-full mb-2" />
+                     <Skeleton className="h-9 w-36" />
+                   </div>
                 </div>
-                 <div className="space-y-1">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea id="bio" defaultValue={user.bio} placeholder="Tell us a little about yourself" />
-                </div>
-                 <Button size="sm">Save Profile</Button>
-              </div>
+              ) : user ? (
+                // Actual Account Content
+                <>
+                  {/* Profile Section */}
+                  <div className="space-y-2 border-b pb-4">
+                    <h3 className="text-lg font-medium">Profile</h3>
+                    <div className="flex items-center space-x-4">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src={profile?.avatar_url || user.user_metadata?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
+                        <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+                      </Avatar>
+                      <Button variant="outline" size="sm">Change Avatar</Button> {/* TODO: Implement avatar change logic */}
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input id="fullName" defaultValue={profile?.full_name || ''} /> {/* TODO: Add state/handler */}
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="bio">Bio</Label>
+                      <Textarea id="bio" defaultValue={profile?.bio || ''} placeholder="Tell us a little about yourself" /> {/* TODO: Add state/handler */}
+                    </div>
+                    <Button size="sm">Save Profile</Button> {/* TODO: Implement save logic */}
+                  </div>
 
-              {/* Email Section */}
-              <div className="space-y-2 border-b pb-4">
-                <h3 className="text-lg font-medium">Email Address</h3>
-                <p className="text-sm text-muted-foreground">Current email: {user.email}</p>
-                <div className="space-y-1">
-                  <Label htmlFor="newEmail">New Email Address</Label>
-                  <Input id="newEmail" type="email" placeholder="new.email@example.com" />
+                  {/* Email Section */}
+                  <div className="space-y-2 border-b pb-4">
+                    <h3 className="text-lg font-medium">Email Address</h3>
+                    <p className="text-sm text-muted-foreground">Current email: {user.email}</p>
+                    <div className="space-y-1">
+                      <Label htmlFor="newEmail">New Email Address</Label>
+                      <Input id="newEmail" type="email" placeholder="new.email@example.com" /> {/* TODO: Add state/handler */}
                 </div>
                  <div className="space-y-1">
                   <Label htmlFor="confirmEmail">Confirm New Email</Label>
-                  <Input id="confirmEmail" type="email" placeholder="Confirm new email" />
+                  <Input id="confirmEmail" type="email" placeholder="Confirm new email" /> {/* TODO: Add state/handler */}
                 </div>
-                <Button size="sm">Change Email</Button>
+                <Button size="sm">Change Email</Button> {/* TODO: Implement change email logic */}
               </div>
 
               {/* Password Section */}
@@ -86,25 +137,29 @@ const SettingsPage = () => {
                 <h3 className="text-lg font-medium">Password</h3>
                 <div className="space-y-1">
                   <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input id="currentPassword" type="password" />
+                  <Input id="currentPassword" type="password" /> {/* TODO: Add state/handler */}
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="newPassword">New Password</Label>
-                  <Input id="newPassword" type="password" />
+                  <Input id="newPassword" type="password" /> {/* TODO: Add state/handler */}
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input id="confirmPassword" type="password" />
+                  <Input id="confirmPassword" type="password" /> {/* TODO: Add state/handler */}
                 </div>
-                <Button size="sm">Change Password</Button>
+                <Button size="sm">Change Password</Button> {/* TODO: Implement change password logic */}
               </div>
 
               {/* Delete Account Section */}
               <div className="space-y-2">
-                 <h3 className="text-lg font-medium text-destructive">Delete Account</h3>
-                 <p className="text-sm text-muted-foreground">Permanently delete your account and all associated data. This action cannot be undone.</p>
-                 <Button variant="destructive" size="sm">Delete My Account</Button>
+                <h3 className="text-lg font-medium text-destructive">Delete Account</h3>
+                <p className="text-sm text-muted-foreground">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                <Button variant="destructive" size="sm">Delete My Account</Button> {/* TODO: Implement delete account logic */}
               </div>
+            </>
+            ) : (
+               <p>Please log in to view settings.</p> // Message if not logged in
+            )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -117,6 +172,7 @@ const SettingsPage = () => {
               <CardDescription>Choose how you want to be notified. All notifications are sent via email.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* TODO: Fetch actual notification settings and add state/handlers */}
               <div className="flex items-center justify-between space-x-2 p-4 border rounded-md">
                 <Label htmlFor="courseUpdates" className="flex flex-col space-y-1">
                   <span>Course Updates</span>
@@ -126,8 +182,9 @@ const SettingsPage = () => {
                 </Label>
                 <Switch
                   id="courseUpdates"
-                  defaultChecked={user.notifications.courseUpdates}
+                  defaultChecked={notifications.courseUpdates}
                   aria-label="Toggle course update emails"
+                  // onCheckedChange={...}
                 />
               </div>
               <div className="flex items-center justify-between space-x-2 p-4 border rounded-md">
@@ -139,8 +196,9 @@ const SettingsPage = () => {
                 </Label>
                 <Switch
                   id="communityActivity"
-                  defaultChecked={user.notifications.communityActivity}
+                  defaultChecked={notifications.communityActivity}
                   aria-label="Toggle community activity emails"
+                   // onCheckedChange={...}
                 />
               </div>
               <div className="flex items-center justify-between space-x-2 p-4 border rounded-md">
@@ -152,13 +210,14 @@ const SettingsPage = () => {
                 </Label>
                 <Switch
                   id="platformAnnouncements"
-                  defaultChecked={user.notifications.platformAnnouncements}
+                  defaultChecked={notifications.platformAnnouncements}
                   aria-label="Toggle platform announcement emails"
+                   // onCheckedChange={...}
                 />
               </div>
             </CardContent>
              <CardFooter>
-                <Button>Save Notification Settings</Button>
+                <Button>Save Notification Settings</Button> {/* TODO: Implement save logic */}
             </CardFooter>
           </Card>
         </TabsContent>
@@ -171,19 +230,20 @@ const SettingsPage = () => {
               <CardDescription>Help us tailor your learning experience.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* TODO: Fetch actual preferences and add state/handlers */}
                <div className="space-y-1">
                   <Label htmlFor="topics">Preferred Topics</Label>
                   {/* Replace with a multi-select or tag input component later */}
-                  <Input id="topics" placeholder="e.g., Natural Language Processing, Computer Vision" defaultValue={user.preferences.topics.join(', ')} />
+                  <Input id="topics" placeholder="e.g., Natural Language Processing, Computer Vision" defaultValue={preferences.topics.join(', ')} />
                   <p className="text-sm text-muted-foreground">Separate topics with commas.</p>
                 </div>
                  <div className="space-y-1">
                   <Label htmlFor="goals">Learning Goals</Label>
-                  <Textarea id="goals" placeholder="What do you hope to achieve?" defaultValue={user.preferences.goals} />
+                  <Textarea id="goals" placeholder="What do you hope to achieve?" defaultValue={preferences.goals} />
                 </div>
             </CardContent>
              <CardFooter>
-                <Button>Save Preferences</Button>
+                <Button>Save Preferences</Button> {/* TODO: Implement save logic */}
             </CardFooter>
           </Card>
         </TabsContent>
