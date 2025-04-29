@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +21,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ClassDiagramPage from "./pages/ClassDiagramPage";
 import ChatbotPage from './pages/ChatbotPage'; // Import ChatbotPage
 import PageLayout from "./components/layout/PageLayout"; // Import PageLayout
+import Navbar from "./components/layout/Navbar"; // Import Navbar
 // Removed non-existent ProtectedRoute import
 
 const queryClient = new QueryClient();
@@ -50,8 +50,15 @@ const App = () => (
             <Route path="/community/posts/:id" element={<PageLayout requireAuth={true}><PostPage /></PageLayout>} />
             <Route path="/profile" element={<PageLayout requireAuth={true}><ProfilePage /></PageLayout>} />
             <Route path="/settings" element={<PageLayout requireAuth={true}><SettingsPage /></PageLayout>} /> {/* Add Settings Route */}
-            {/* Pass hideFooter={true} to PageLayout for the chatbot route */}
-            <Route path="/chatbot" element={<PageLayout requireAuth={true} hideFooter={true}><ChatbotPage /></PageLayout>} />
+            {/* Chatbot Route with custom layout */}
+            <Route path="/chatbot" element={
+              <div className="flex flex-col">
+                <Navbar />
+                <main className="flex-1">
+                  <ChatbotPage />
+                </main>
+              </div>
+            } />
             <Route path="/architecture" element={<PageLayout><ClassDiagramPage /></PageLayout>} />
 
             {/* Catch-all */}

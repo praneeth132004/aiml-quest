@@ -1,70 +1,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useRoadmap } from '../hooks/use-roadmap'; // Assuming this hook provides roadmap progress
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'; // Assuming path
-import { Button } from '../components/ui/button'; // Assuming path
-import { Badge } from '../components/ui/badge'; // Assuming path
-import { Progress } from '../components/ui/progress'; // Assuming path for progress bar
-import { ClockIcon, BookOpenIcon, CheckCircleIcon, Loader2 } from 'lucide-react'; // Example icons, added Loader2
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Progress } from '../components/ui/progress';
+import { ClockIcon, BookOpenIcon, CheckCircleIcon, Loader2 } from 'lucide-react';
 
-// Mock data for quizzes (replace with actual data fetching)
-// You might fetch this based on user progress or roadmap module
-const mockRecentQuizzes = [
-  { id: "quiz-1", title: "Python Basics for ML", completed: true, score: 85, moduleId: "module-1" },
-  { id: "quiz-2", title: "Data Manipulation with Pandas", completed: false, score: undefined, moduleId: "module-2" },
-];
+// We'll get quiz data from the backend later
+interface Quiz {
+  id: string;
+  title: string;
+  completed: boolean;
+  score?: number;
+  moduleId: string;
+}
 
-// Mock data for next steps (replace with actual data fetching from roadmap)
-const mockNextSteps = [
-    { id: "module-2", title: "Module 2: Data Manipulation with Pandas", type: "module" },
-    { id: "lesson-2.1", title: "Lesson 2.1: Intro to DataFrames", type: "lesson" },
+// Temporary quiz data until backend integration
+const mockRecentQuizzes: Quiz[] = [
+  { id: "quiz-1", title: "Python Basics for ML", completed: false, moduleId: "module-1" },
+  { id: "quiz-2", title: "Data Manipulation with Pandas", completed: false, moduleId: "module-2" },
 ];
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
-  // Pass userId to the hook
-  const { modules, loading: roadmapLoading, error: roadmapError, hasRoadmap } = useRoadmap(user?.id || '');
+  const { user, profile, roadmapData, isLoading, isExtendedDataLoading } = useAuth();
 
-  // Derive progress information from the modules array
-  const completedModules = modules.filter(m => m.status === 'completed');
-  const currentModule = modules.find(m => m.status === 'in-progress') || modules.find(m => m.status === 'locked'); // First in-progress or first locked
-  const totalModules = modules.length;
-  const progressPercentage = totalModules > 0 ? (completedModules.length / totalModules) * 100 : 0;
-
-  // Derive next steps from modules (example: next 2 after current)
-  const currentModuleIndex = currentModule ? modules.findIndex(m => m.id === currentModule.id) : -1;
-  const nextStepsModules = currentModuleIndex !== -1
-    ? modules.slice(currentModuleIndex + 1, currentModuleIndex + 3) // Get next 2 modules
-    : modules.slice(0, 2); // Or first 2 if no current module found
-
-  // Format next steps for display
-  const derivedNextSteps = nextStepsModules.map(m => ({
-      id: m.id,
-      title: m.title,
-      type: 'module' // Assuming steps are modules for now
-  }));
-
-
-  if (roadmapLoading) {
+  // Handle main loading state
+  if (isLoading || isExtendedDataLoading) {
     return (
-        <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[300px]">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <p className="ml-2 text-gray-600">Loading your dashboard...</p>
-        </div>
+      <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[300px]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="ml-2 text-gray-600">Loading your dashboard...</p>
+      </div>
     );
   }
 
-  if (roadmapError) {
-      return (
-          <div className="container mx-auto px-4 py-12 text-center">
-              <p className="text-red-600">Error loading roadmap data: {roadmapError.message}</p>
-          </div>
-      );
-  }
-
-   // Handle case where user has no roadmap (needs onboarding)
-   if (!hasRoadmap && !roadmapLoading) {
+  // Handle case where user has no roadmap (needs onboarding)
+  if (!roadmapData) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h2 className="text-2xl font-semibold mb-4">Set Up Your Learning Path</h2>
@@ -76,12 +48,31 @@ const DashboardPage: React.FC = () => {
     );
   }
 
+  // Calculate progress
+  const allModules = roadmapData.modules || [];
+  const completedModules = allModules.filter(moduleId => 
+    roadmapData.preferences?.completedModules?.includes(moduleId)
+  );
+  
+  const progressPercentage = allModules.length > 0 
+    ? (completedModules.length / allModules.length) * 100 
+    : 0;
+
+  // Get next steps (next 2 incomplete modules)
+  const nextStepsModules = allModules
+    .filter(moduleId => !roadmapData.preferences?.completedModules?.includes(moduleId))
+    .slice(0, 2)
+    .map(moduleId => ({
+      id: moduleId,
+      title: `Module ${moduleId}`, // You might want to fetch actual module titles from somewhere
+      type: 'module'
+    }));
 
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Welcome Section */}
       <h1 className="text-3xl font-bold mb-4 text-gray-800">
-        Welcome back, {user?.user_metadata?.full_name || 'Learner'}!
+        Welcome back, {profile?.full_name || user?.user_metadata?.full_name || 'Learner'}!
       </h1>
       <p className="text-gray-600 mb-8">Let's pick up where you left off.</p>
 
@@ -92,15 +83,15 @@ const DashboardPage: React.FC = () => {
             <CardTitle>Your Learning Roadmap</CardTitle>
           </CardHeader>
           <CardContent>
-            {currentModule ? (
+            {nextStepsModules.length > 0 ? (
               <>
                 <p className="text-sm text-gray-600 mb-2">Currently on:</p>
-                <h3 className="text-lg font-semibold mb-4">{currentModule.title}</h3>
+                <h3 className="text-lg font-semibold mb-4">{nextStepsModules[0].title}</h3>
                 <Progress value={progressPercentage} className="w-full mb-4" />
                 <p className="text-sm text-gray-500">{Math.round(progressPercentage)}% completed</p>
               </>
             ) : (
-              <p className="text-gray-600">Start your learning journey on the Roadmap page!</p>
+              <p className="text-gray-600">All modules completed! Check the Roadmap page for advanced content.</p>
             )}
           </CardContent>
           <CardFooter>
@@ -132,9 +123,9 @@ const DashboardPage: React.FC = () => {
             <CardTitle>Continue Learning</CardTitle>
           </CardHeader>
           <CardContent>
-            {derivedNextSteps.length > 0 ? (
+            {nextStepsModules.length > 0 ? (
               <ul className="space-y-3">
-                {derivedNextSteps.map(step => (
+                {nextStepsModules.map(step => (
                   <li key={step.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
                     <div className="flex items-center space-x-3">
                       <BookOpenIcon className="h-5 w-5 text-blue-600" />
@@ -143,7 +134,7 @@ const DashboardPage: React.FC = () => {
                         <Badge variant="secondary" className="mt-1">{step.type}</Badge>
                       </div>
                     </div>
-                    <Link to={step.type === 'module' ? `/roadmap#${step.id}` : `/roadmap/lesson/${step.id}`}> {/* Adjust link as needed */}
+                    <Link to={`/roadmap/module/${step.id}`}>
                       <Button size="sm" variant="outline">Go</Button>
                     </Link>
                   </li>
@@ -179,7 +170,7 @@ const DashboardPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <Link to="/quizzes"> {/* Link to the main quizzes page, could potentially link to specific quiz */}
+                    <Link to={`/quizzes/${quiz.id}`}>
                       <Button size="sm" variant={quiz.completed ? "outline" : "default"}>
                         {quiz.completed ? "Review" : "Start"}
                       </Button>
@@ -191,16 +182,13 @@ const DashboardPage: React.FC = () => {
               <p className="text-gray-600">No recent quiz activity.</p>
             )}
           </CardContent>
-           <CardFooter>
-             <Link to="/quizzes">
-                <Button variant="outline">View All Quizzes</Button>
-             </Link>
-           </CardFooter>
+          <CardFooter>
+            <Link to="/quizzes">
+              <Button variant="outline">View All Quizzes</Button>
+            </Link>
+          </CardFooter>
         </Card>
       </div>
-
-      {/* Add other sections like Course Overview or Community Activity here if needed */}
-
     </div>
   );
 };

@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import PageLayout from "@/components/layout/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -255,10 +254,9 @@ const PostPage = () => {
 
   if (isLoading) {
     return (
-      <PageLayout>
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex items-center mb-6">
-            <Button variant="ghost" asChild className="mr-2">
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" asChild className="mr-2">
               <Link to="/community">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Community
@@ -269,16 +267,14 @@ const PostPage = () => {
             <p className="text-gray-500">Loading post...</p>
           </div>
         </div>
-      </PageLayout>
     );
   }
 
   if (!post) {
     return (
-      <PageLayout>
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex items-center mb-6">
-            <Button variant="ghost" asChild className="mr-2">
+      <div className="container mx-auto px-4 py-12">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" asChild className="mr-2">
               <Link to="/community">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Community
@@ -294,15 +290,13 @@ const PostPage = () => {
             </CardContent>
           </Card>
         </div>
-      </PageLayout>
     );
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex items-center mb-6">
-          <Button variant="ghost" asChild className="mr-2">
+    <div className="container mx-auto px-4 py-12">
+      <div className="flex items-center mb-6">
+        <Button variant="ghost" asChild className="mr-2">
             <Link to="/community">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Community
@@ -387,7 +381,6 @@ const PostPage = () => {
         {post && <CommentSection postId={post.id} />}
 
       </div>
-    </PageLayout>
   );
 };
 
