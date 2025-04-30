@@ -28,6 +28,10 @@ import Navbar from "./components/layout/Navbar"; // Import Navbar
 // Dynamically import ChatbotPage
 const LazyChatbotPage = lazy(() => import('./pages/ChatbotPage'));
 
+import TermsOfServicePage from '@/pages/legal/TermsOfServicePage';
+import PrivacyPolicyPage from '@/pages/legal/PrivacyPolicyPage';
+import CookiePolicyPage from '@/pages/legal/CookiePolicyPage';
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -66,6 +70,9 @@ const App = () => (
               </div>
             } />
             <Route path="/architecture" element={<PageLayout><ClassDiagramPage /></PageLayout>} />
+            <Route path="/legal/terms" element={<PageLayout><TermsOfServicePage /></PageLayout>} />
+            <Route path="/legal/privacy" element={<PageLayout><PrivacyPolicyPage /></PageLayout>} />
+            <Route path="/legal/cookies" element={<PageLayout><CookiePolicyPage /></PageLayout>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

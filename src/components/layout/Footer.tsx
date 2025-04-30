@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { BookOpen, Github, Twitter, Linkedin } from 'lucide-react';
+import { BookOpen, Github, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -18,14 +18,21 @@ const Footer = () => {
               Your personalized journey through the world of AI and Machine Learning, crafted just for you.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-500 hover:text-aiml-primary">
-                <Github size={20} />
-              </a>
-              <a href="#" className="text-gray-500 hover:text-aiml-primary">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="text-gray-500 hover:text-aiml-primary">
+              <a 
+                href="https://www.linkedin.com/in/ns-praneeth-4a8b98242" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-gray-500 hover:text-aiml-primary"
+              >
                 <Linkedin size={20} />
+              </a>
+              <a 
+                href="https://www.instagram.com/ns_praneeth_ns.2004" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-gray-500 hover:text-aiml-primary"
+              >
+                <Instagram size={20} />
               </a>
             </div>
           </div>
@@ -43,9 +50,27 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold text-lg mb-4">Legal</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-600 hover:text-aiml-primary text-sm">Terms of Service</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-aiml-primary text-sm">Privacy Policy</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-aiml-primary text-sm">Cookie Policy</a></li>
+              <li><Link to="/legal/terms" className="text-gray-600 hover:text-aiml-primary text-sm">Terms of Service</Link></li>
+              <li><Link to="/legal/privacy" className="text-gray-600 hover:text-aiml-primary text-sm">Privacy Policy</Link></li>
+              <li><Link to="/legal/cookies" className="text-gray-600 hover:text-aiml-primary text-sm">Cookie Policy</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-lg mb-4">Contact</h3>
+            <ul className="space-y-2">
+              <li className="flex items-center text-gray-600 text-sm">
+                <Mail size={16} className="mr-2" />
+                <a href="mailto:odysseyaiml@gmail.com" className="hover:text-aiml-primary">
+                  odysseyaiml@gmail.com
+                </a>
+              </li>
+              <li className="flex items-center text-gray-600 text-sm">
+                <Phone size={16} className="mr-2" />
+                <a href="tel:+918688433423" className="hover:text-aiml-primary">
+                  +91 86884 33423
+                </a>
+              </li>
             </ul>
           </div>
         </div>
