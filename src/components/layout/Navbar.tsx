@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Menu, X, BookOpen, User, BarChart2, Users, Search, LogOut, MessageSquare, Home } from 'lucide-react'; // Added Home icon
@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/AuthContext';
+import GlobalSearch from '@/components/GlobalSearch';
 
 const Navbar = () => {
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -64,7 +66,11 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsSearchOpen(true)}
+              >
                 <Search className="h-4 w-4 mr-2" />
                 Search
               </Button>
@@ -182,6 +188,10 @@ const Navbar = () => {
           </div>
         </div>
       )}
+      <GlobalSearch 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
+      />
     </nav>
   );
 };
