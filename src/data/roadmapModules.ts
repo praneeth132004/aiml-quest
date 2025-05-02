@@ -29,45 +29,40 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "Python Crash Course",
-          url: "https://www.youtube.com/watch?v=JJmcL1N2KQs",
+          title: "Python for Everybody (Full University Course)",
+          url: "https://www.youtube.com/watch?v=8DvywoWv6fI",
           provider: "freeCodeCamp"
         },
         {
-          title: "Python for Beginners",
-          url: "https://www.coursera.org/learn/python-for-applied-data-science-ai",
-          provider: "Coursera"
+          title: "AI Python for Beginners",
+          url: "https://www.deeplearning.ai/short-courses/ai-python-for-beginners/",
+          provider: "DeepLearning.AI"
         }
       ],
       projects: [
         {
-          title: "Data Analysis Mini-Project",
-          url: "https://github.com/practical-tutorials/python-mini-projects",
-          provider: "GitHub"
+          title: "Python Practice",
+          url: "https://www.hackerrank.com/domains/python",
+          provider: "HackerRank"
         }
       ],
       readings: [
         {
-          title: "Introduction to Python",
-          url: "https://docs.python.org/3/tutorial/",
+          title: "The Python Tutorial",
+          url: "https://docs.python.org/3/tutorial/index.html",
           provider: "Python.org"
         },
         {
-          title: "Python for Data Science",
-          url: "https://jakevdp.github.io/PythonDataScienceHandbook/",
-          provider: "Jake VanderPlas"
+          title: "Automate the Boring Stuff with Python",
+          url: "https://automatetheboringstuff.com/",
+          provider: "Al Sweigart"
         }
       ],
       exercises: [
         {
-          title: "Basic Python Syntax",
-          url: "https://www.w3schools.com/python/exercise.asp",
-          provider: "W3Schools"
-        },
-        {
-          title: "Working with Data Types",
-          url: "https://www.hackerrank.com/domains/python",
-          provider: "HackerRank"
+          title: "Python Course",
+          url: "https://www.kaggle.com/learn/python",
+          provider: "Kaggle Learn"
         }
       ]
     },
@@ -86,45 +81,40 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "Pandas Tutorial Series",
-          url: "https://www.youtube.com/watch?v=ZyhVh-qRZPA&list=PL-osiE80TeTsWmV9i9c58mdDCSskIFdDS",
+          title: "Pandas Playlist",
+          url: "https://www.youtube.com/playlist?list=PL-osiE80TeTsWmV9i9c58mdDCSskIFdDS",
           provider: "Corey Schafer"
         },
         {
-          title: "Data Analysis Workflows",
-          url: "https://www.datacamp.com/courses/pandas-foundations",
-          provider: "DataCamp"
+          title: "Pandas Q&A",
+          url: "https://www.youtube.com/playlist?list=PL5-da3qGB5IAMNCDP07y3v7MAwG9S9w9_",
+          provider: "Data School"
         }
       ],
       projects: [
         {
-          title: "Real-world Data Analysis Project",
+          title: "Pandas Course",
           url: "https://www.kaggle.com/learn/pandas",
-          provider: "Kaggle"
+          provider: "Kaggle Learn"
         }
       ],
       readings: [
         {
-          title: "Pandas Documentation",
-          url: "https://pandas.pydata.org/docs/",
+          title: "Pandas User Guide",
+          url: "https://pandas.pydata.org/docs/user_guide/index.html",
           provider: "pandas.org"
         },
         {
-          title: "Data Analysis Guide",
-          url: "https://pandas.pydata.org/pandas-docs/stable/user_guide/10min.html",
-          provider: "pandas.org"
+          title: "Python for Data Analysis, 3rd Edition",
+          url: "https://github.com/wesm/pydata-book",
+          provider: "Wes McKinney"
         }
       ],
       exercises: [
         {
-          title: "Data Cleaning",
-          url: "https://www.kaggle.com/learn/data-cleaning",
-          provider: "Kaggle"
-        },
-        {
-          title: "Data Transformation",
-          url: "https://www.kaggle.com/learn/data-visualization",
-          provider: "Kaggle"
+          title: "Modern Pandas",
+          url: "https://tomaugspurger.github.io/modern-pandas",
+          provider: "Tom Augspurger"
         }
       ]
     },
@@ -143,50 +133,45 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "ML Algorithms Explained",
-          url: "https://www.coursera.org/learn/machine-learning",
+          title: "Machine Learning Specialization",
+          url: "https://www.coursera.org/specializations/machine-learning-introduction",
           provider: "Coursera - Andrew Ng"
         },
         {
-          title: "Practical ML Implementation",
-          url: "https://www.fast.ai/",
-          provider: "fast.ai"
+          title: "StatQuest with Josh Starmer",
+          url: "https://www.youtube.com/c/statquest",
+          provider: "YouTube"
         }
       ],
       projects: [
         {
-          title: "Classification Project",
-          url: "https://www.kaggle.com/competitions/titanic",
-          provider: "Kaggle"
+          title: "Scikit-learn Tutorials",
+          url: "https://scikit-learn.org/stable/tutorial/index.html",
+          provider: "scikit-learn"
         },
         {
-          title: "Regression Project",
-          url: "https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques",
+          title: "Getting Started Competitions",
+          url: "https://www.kaggle.com/competitions?competitionType=gettingStarted",
           provider: "Kaggle"
         }
       ],
       readings: [
         {
-          title: "ML Fundamentals",
-          url: "https://developers.google.com/machine-learning/crash-course",
-          provider: "Google"
+          title: "An Introduction to Statistical Learning",
+          url: "https://www.statlearning.com/",
+          provider: "James, Witten, Hastie, Tibshirani"
         },
         {
-          title: "Scikit-learn Documentation",
-          url: "https://scikit-learn.org/stable/tutorial/index.html",
-          provider: "scikit-learn"
+          title: "Machine Learning Crash Course",
+          url: "https://developers.google.com/machine-learning/crash-course",
+          provider: "Google"
         }
       ],
       exercises: [
         {
-          title: "Model Training",
-          url: "https://www.kaggle.com/learn/intro-to-machine-learning",
-          provider: "Kaggle"
-        },
-        {
-          title: "Model Evaluation",
-          url: "https://www.kaggle.com/learn/intermediate-machine-learning",
-          provider: "Kaggle"
+          title: "Scikit-learn Tutorials",
+          url: "https://scikit-learn.org/stable/tutorial/index.html",
+          provider: "scikit-learn"
         }
       ]
     },
@@ -205,50 +190,45 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "Neural Networks from Scratch",
-          url: "https://www.youtube.com/watch?v=aircAruvnKk",
-          provider: "3Blue1Brown"
+          title: "Deep Learning Specialization",
+          url: "https://www.coursera.org/specializations/deep-learning",
+          provider: "DeepLearning.AI"
         },
         {
-          title: "PyTorch Tutorials",
-          url: "https://pytorch.org/tutorials/",
-          provider: "PyTorch"
+          title: "Neural Networks Series",
+          url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab",
+          provider: "3Blue1Brown"
         }
       ],
       projects: [
         {
-          title: "Image Classification",
-          url: "https://www.kaggle.com/competitions/cifar-10",
-          provider: "Kaggle"
+          title: "Practical Deep Learning for Coders",
+          url: "https://course.fast.ai/",
+          provider: "Fast.ai"
         },
         {
-          title: "Natural Language Processing",
-          url: "https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge",
-          provider: "Kaggle"
+          title: "Basic Classification / Image Classification",
+          url: "https://www.tensorflow.org/tutorials/keras/classification",
+          provider: "TensorFlow"
         }
       ],
       readings: [
         {
-          title: "Deep Learning Book",
-          url: "https://www.deeplearningbook.org/",
-          provider: "Ian Goodfellow, Yoshua Bengio, Aaron Courville"
+          title: "Neural Networks and Deep Learning",
+          url: "http://neuralnetworksanddeeplearning.com/",
+          provider: "Michael Nielsen"
         },
         {
-          title: "Neural Networks Guide",
-          url: "https://www.deeplearning.ai/ai-notes/ai-notes-neural-networks/",
-          provider: "DeepLearning.ai"
+          title: "Deep Learning Book",
+          url: "https://www.deeplearningbook.org/",
+          provider: "Goodfellow, Bengio, Courville"
         }
       ],
       exercises: [
         {
-          title: "Building Neural Networks",
-          url: "https://www.coursera.org/learn/neural-networks-deep-learning",
-          provider: "Coursera"
-        },
-        {
-          title: "Training Deep Models",
-          url: "https://www.fast.ai/2018/04/29/deep-learning/",
-          provider: "fast.ai"
+          title: "Practical Deep Learning for Coders",
+          url: "https://course.fast.ai/",
+          provider: "Fast.ai"
         }
       ]
     },
@@ -256,7 +236,7 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     updated_at: "2025-04-13 09:24:04.927209+00"
   },
   {
-    id: "a1b2c3d4-e5f6-7890-1234-567890abcdef", // Example UUID - replace with actual generation if possible
+    id: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
     title: "Linear Algebra for Machine Learning",
     description: "Fundamental concepts of linear algebra essential for understanding many ML algorithms.",
     difficulty_level: "beginner",
@@ -268,38 +248,39 @@ export const allRoadmapModules: RoadmapModuleData[] = [
       videos: [
         {
           title: "Essence of Linear Algebra",
-          url: "https://www.youtube.com/watch?v=fNk_zzaMoSs",
+          url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab",
           provider: "3Blue1Brown"
         },
         {
-          title: "Khan Academy Linear Algebra",
+          title: "Linear Algebra",
           url: "https://www.khanacademy.org/math/linear-algebra",
           provider: "Khan Academy"
         }
       ],
-      projects: [],
+      projects: [
+        {
+          title: "NumPy: the absolute basics for beginners",
+          url: "https://numpy.org/doc/stable/user/absolute_beginners.html",
+          provider: "NumPy"
+        }
+      ],
       readings: [
         {
-          title: "Linear Algebra Review Notes",
-          url: "https://www.math.uwaterloo.ca/~cswartz/LinearAlgebra/LinearAlgebra.pdf",
-          provider: "University of Waterloo"
+          title: "Mathematics for Machine Learning",
+          url: "https://mml-book.github.io/",
+          provider: "Deisenroth, Faisal, Ong"
         },
         {
-          title: "Chapter 2 of Deep Learning Book",
-          url: "https://www.deeplearningbook.org/contents/linear-algebra.html",
-          provider: "Ian Goodfellow, Yoshua Bengio, Aaron Courville"
+          title: "Linear Algebra - MIT OpenCourseWare",
+          url: "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/",
+          provider: "Gilbert Strang"
         }
       ],
       exercises: [
         {
-          title: "Vector Operations",
-          url: "https://www.khanacademy.org/math/linear-algebra/vectors-and-spaces",
-          provider: "Khan Academy"
-        },
-        {
-          title: "Matrix Multiplication",
-          url: "https://www.khanacademy.org/math/linear-algebra/matrix-transformations",
-          provider: "Khan Academy"
+          title: "NumPy: the absolute basics for beginners",
+          url: "https://numpy.org/doc/stable/user/absolute_beginners.html",
+          provider: "NumPy"
         }
       ]
     },
@@ -307,7 +288,7 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     updated_at: "2025-04-26 18:00:00.000000+00"
   },
   {
-    id: "b2c3d4e5-f6a7-8901-2345-67890abcdef1", // Example UUID
+    id: "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
     title: "Introduction to Natural Language Processing",
     description: "Explore techniques for processing and understanding human language.",
     difficulty_level: "intermediate",
@@ -318,28 +299,28 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "NLP Course by Dan Jurafsky",
-          url: "https://www.youtube.com/playlist?list=PL397E765BA0822230",
-          provider: "Stanford University"
+          title: "NLP with Deep Learning",
+          url: "https://www.youtube.com/playlist?list=PLoROMvodv4rOhcuXMZkNm7j3fVwBBY42z",
+          provider: "Stanford CS224N"
         },
         {
-          title: "spaCy Basics",
-          url: "https://spacy.io/usage/spacy-101",
-          provider: "spaCy"
+          title: "Natural Language Processing Specialization",
+          url: "https://www.coursera.org/specializations/natural-language-processing",
+          provider: "DeepLearning.AI"
         }
       ],
       projects: [
         {
-          title: "Sentiment Analysis Project",
-          url: "https://github.com/practical-tutorials/nlp-mini-projects",
-          provider: "GitHub"
+          title: "Hugging Face Course",
+          url: "https://huggingface.co/learn/nlp-course",
+          provider: "Hugging Face"
         }
       ],
       readings: [
         {
-          title: "Speech and Language Processing (Jurafsky & Martin)",
+          title: "Speech and Language Processing",
           url: "https://web.stanford.edu/~jurafsky/slp3/",
-          provider: "Stanford University"
+          provider: "Jurafsky & Martin"
         },
         {
           title: "NLTK Book",
@@ -349,14 +330,9 @@ export const allRoadmapModules: RoadmapModuleData[] = [
       ],
       exercises: [
         {
-          title: "Text Preprocessing",
+          title: "Natural Language Processing",
           url: "https://www.kaggle.com/learn/natural-language-processing",
-          provider: "Kaggle"
-        },
-        {
-          title: "Tokenization",
-          url: "https://www.kaggle.com/learn/word2vec-nlp-tutorial",
-          provider: "Kaggle"
+          provider: "Kaggle Learn"
         }
       ]
     },
@@ -364,7 +340,7 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     updated_at: "2025-04-26 18:00:00.000000+00"
   },
   {
-    id: "c3d4e5f6-a7b8-9012-3456-7890abcdef12", // Example UUID
+    id: "c3d4e5f6-a7b8-9012-3456-7890abcdef12",
     title: "Computer Vision Fundamentals with OpenCV",
     description: "Learn the basics of image processing and computer vision using the OpenCV library.",
     difficulty_level: "intermediate",
@@ -375,44 +351,39 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "OpenCV Python Tutorials",
-          url: "https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html",
+          title: "OpenCV Tutorials",
+          url: "https://docs.opencv.org/4.x/d6/d00/tutorial_table_of_content_core.html",
           provider: "OpenCV"
         },
         {
-          title: "Intro to Computer Vision",
-          url: "https://www.youtube.com/watch?v=0F3oYcd514g",
+          title: "OpenCV Course",
+          url: "https://www.youtube.com/watch?v=oXlwWbU8l2o",
           provider: "freeCodeCamp"
         }
       ],
       projects: [
         {
-          title: "Object Detection Mini-Project",
-          url: "https://github.com/practical-tutorials/opencv-mini-projects",
-          provider: "GitHub"
+          title: "PyImageSearch Blog",
+          url: "https://pyimagesearch.com/",
+          provider: "Adrian Rosebrock"
         }
       ],
       readings: [
         {
-          title: "OpenCV Documentation",
-          url: "https://docs.opencv.org/4.x/",
+          title: "OpenCV-Python Tutorials",
+          url: "https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html",
           provider: "OpenCV"
         },
         {
-          title: "Learning OpenCV Book",
-          url: "https://www.amazon.com/Learning-OpenCV-Computer-Vision-Library/dp/0596516134",
-          provider: "Amazon"
+          title: "Learn OpenCV",
+          url: "https://learnopencv.com/",
+          provider: "LearnOpenCV"
         }
       ],
       exercises: [
         {
-          title: "Image Filtering",
-          url: "https://docs.opencv.org/4.x/d4/d86/tutorial_py_image_filtering.html",
-          provider: "OpenCV"
-        },
-        {
-          title: "Feature Detection",
-          url: "https://docs.opencv.org/4.x/dc/d01/tutorial_py_feature_detection.html",
+          title: "OpenCV Official Tutorials",
+          url: "https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html",
           provider: "OpenCV"
         }
       ]
@@ -421,7 +392,7 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     updated_at: "2025-04-26 18:00:00.000000+00"
   },
   {
-    id: "d4e5f6a7-b8c9-0123-4567-890abcdef123", // Example UUID
+    id: "d4e5f6a7-b8c9-0123-4567-890abcdef123",
     title: "Introduction to MLOps",
     description: "Understand the principles and practices for deploying, monitoring, and maintaining ML models in production.",
     difficulty_level: "advanced",
@@ -432,45 +403,40 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "MLOps Zoomcamp",
-          url: "https://www.youtube.com/watch?v=UdAa0GzgGjw",
-          provider: "MLOps Zoomcamp"
+          title: "MLOps Specialization",
+          url: "https://www.coursera.org/specializations/machine-learning-engineering-for-production-mlops",
+          provider: "DeepLearning.AI"
         },
         {
-          title: "AWS SageMaker Intro",
-          url: "https://www.youtube.com/watch?v=5GzvGzvGzvG",
-          provider: "AWS"
+          title: "MLOps Videos",
+          url: "https://www.youtube.com/@GoogleCloudTech/search?query=mlops",
+          provider: "Google Cloud Tech"
         }
       ],
       projects: [
         {
-          title: "Simple Model Deployment Pipeline",
-          url: "https://github.com/practical-tutorials/mlops-mini-projects",
-          provider: "GitHub"
+          title: "MLflow Documentation - Tutorials & Examples",
+          url: "https://mlflow.org/docs/latest/tutorials-and-examples/index.html",
+          provider: "MLflow"
         }
       ],
       readings: [
         {
-          title: "Designing Machine Learning Systems Book",
-          url: "https://www.manning.com/books/designing-machine-learning-systems",
-          provider: "Manning Publications"
+          title: "MLOps Principles",
+          url: "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning",
+          provider: "Google Cloud"
         },
         {
-          title: "Google MLOps Whitepaper",
-          url: "https://ai.google/research/mlops",
-          provider: "Google"
+          title: "Awesome MLOps",
+          url: "https://github.com/visenger/awesome-mlops",
+          provider: "GitHub"
         }
       ],
       exercises: [
         {
-          title: "Containerizing a Model",
-          url: "https://www.kaggle.com/learn/docker",
-          provider: "Kaggle"
-        },
-        {
-          title: "Setting up Monitoring",
-          url: "https://www.kaggle.com/learn/mlops",
-          provider: "Kaggle"
+          title: "MLOps Tutorials & Projects",
+          url: "https://dagshub.com/docs/tutorials/",
+          provider: "DAGsHub"
         }
       ]
     },
@@ -478,7 +444,7 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     updated_at: "2025-04-26 18:00:00.000000+00"
   },
   {
-    id: "e5f6a7b8-c9d0-1234-5678-90abcdef1234", // Example UUID
+    id: "e5f6a7b8-c9d0-1234-5678-90abcdef1234",
     title: "Data Visualization with Matplotlib & Seaborn",
     description: "Learn to create informative and visually appealing plots for data exploration and communication.",
     difficulty_level: "beginner",
@@ -489,14 +455,14 @@ export const allRoadmapModules: RoadmapModuleData[] = [
     resources: {
       videos: [
         {
-          title: "Matplotlib Tutorial",
-          url: "https://www.youtube.com/watch?v=UO98lJQ5QmM",
-          provider: "freeCodeCamp"
+          title: "Matplotlib Playlist",
+          url: "https://www.youtube.com/playlist?list=PL-osiE80TeTvipOqomVEeZ1HRrcEvtZB_",
+          provider: "Corey Schafer"
         },
         {
-          title: "Seaborn Guide",
-          url: "https://seaborn.pydata.org/tutorial.html",
-          provider: "Seaborn"
+          title: "Introduction to Data Visualization with Seaborn",
+          url: "https://www.datacamp.com/courses/introduction-to-data-visualization-with-seaborn",
+          provider: "DataCamp"
         }
       ],
       projects: [

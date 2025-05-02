@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, BookOpen, User, BarChart2, Users, Search, LogOut, MessageSquare } from 'lucide-react'; // Added MessageSquare
+import { Menu, X, BookOpen, User, BarChart2, Users, Search, LogOut, MessageSquare, Home } from 'lucide-react'; // Added Home icon
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import {
@@ -55,11 +55,12 @@ const Navbar = () => {
         ) : (
           <div className="flex items-center space-x-2">
             <div className="hidden md:flex items-center space-x-6 mr-4">
+              <NavLink to="/">Home</NavLink>
               <NavLink to="/roadmap">Roadmap</NavLink>
               <NavLink to="/courses">Courses</NavLink>
               <NavLink to="/quizzes">Quizzes</NavLink>
               <NavLink to="/community">Community</NavLink>
-              <NavLink to="/chatbot">Chatbot</NavLink> {/* Added Chatbot Link */}
+              <NavLink to="/chatbot">Chatbot</NavLink>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -120,11 +121,14 @@ const Navbar = () => {
       {isMobile && (
         <div
           className={cn(
-            "fixed inset-0 top-16 bg-background bg-opacity-100 z-40 transform transition-transform duration-300 ease-in-out", // Changed bg-white to bg-background and added bg-opacity-100
+            "fixed inset-0 top-16 bg-background bg-opacity-100 z-40 transform transition-transform duration-300 ease-in-out",
             isMenuOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
-          <div className="flex flex-col p-4 bg-background bg-opacity-100"> {/* Added background classes here */}
+          <div className="flex flex-col p-4 bg-background bg-opacity-100">
+            <MobileNavLink to="/" icon={<Home size={18} />} onClick={toggleMenu}>
+              Home
+            </MobileNavLink>
             <MobileNavLink to="/roadmap" icon={<BarChart2 size={18} />} onClick={toggleMenu}>
               Roadmap
             </MobileNavLink>
@@ -137,7 +141,7 @@ const Navbar = () => {
             <MobileNavLink to="/community" icon={<Users size={18} />} onClick={toggleMenu}>
               Community
             </MobileNavLink>
-            <MobileNavLink to="/chatbot" icon={<MessageSquare size={18} />} onClick={toggleMenu}> {/* Added Chatbot Mobile Link */}
+            <MobileNavLink to="/chatbot" icon={<MessageSquare size={18} />} onClick={toggleMenu}>
               Chatbot
             </MobileNavLink>
             <div className="mt-4">
